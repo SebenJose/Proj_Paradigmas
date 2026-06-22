@@ -27,6 +27,7 @@ services:
       DB_NAME: ${DB_NAME:-proj_paradigmas}
       DB_USER: ${DB_USER:-app_user}
       DB_PASSWORD: ${DB_PASSWORD:-app_password}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-troque-em-producao-0123456789abcdef0123456789abcdef}
       SPRING_DOCKER_COMPOSE_ENABLED: "false"
     ports:
       - "8080:8080"
