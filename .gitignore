@@ -1,0 +1,21 @@
+# Ambiente
+.env
+.env.local
+!.env.example
+!.env.local.example
+
+# IDEs / editores
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Claude Code (configuração local da máquina, não compartilhada)
+.claude/settings.local.json
+
+# Logs
+*.log
