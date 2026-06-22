@@ -1,6 +1,7 @@
 import { API_URL } from "@/shared/lib/env";
 import { ApiError, clearToken, setToken } from "@/shared/lib/api-client";
-import type { AuthResponse, LoginCredentials } from "../types";
+import type { LoginCredentials } from "../schemas";
+import type { AuthResponse } from "../types";
 
 export async function login({
   username,

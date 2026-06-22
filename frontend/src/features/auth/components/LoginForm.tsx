@@ -2,77 +2,83 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "../services/auth.service";
+import { loginSchema, type LoginCredentials } from "../schemas";
+import { Button } from "@/shared/components/ui/button";
+import { Input } from "@/shared/components/ui/input";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/shared/components/ui/field";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
 
 export function LoginForm() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginCredentials>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { username: "", password: "" },
+  });
+
+  async function onSubmit(values: LoginCredentials) {
+    setFormError(null);
 
     try {
-      await login({ username, password });
+      await login(values);
       router.push("/");
     } catch {
-      setError("Usuário ou senha inválidos");
-    } finally {
-      setIsSubmitting(false);
+      setFormError("Usuário ou senha inválidos");
     }
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-zinc-200 p-6 dark:border-zinc-800"
-    >
-      <h1 className="text-xl font-semibold">Entrar</h1>
+    <Card className="w-full max-w-sm">
+      <CardHeader>
+        <CardTitle>Entrar</CardTitle>
+        <CardDescription>Acesse sua conta para continuar</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <FieldGroup>
+            <Field data-invalid={!!errors.username}>
+              <FieldLabel htmlFor="username">Usuário</FieldLabel>
+              <Input
+                id="username"
+                autoComplete="username"
+                {...register("username")}
+              />
+              <FieldError errors={errors.username ? [errors.username] : undefined} />
+            </Field>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="username" className="text-sm font-medium">
-          Usuário
-        </label>
-        <input
-          id="username"
-          name="username"
-          autoComplete="username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-          required
-        />
-      </div>
+            <Field data-invalid={!!errors.password}>
+              <FieldLabel htmlFor="password">Senha</FieldLabel>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                {...register("password")}
+              />
+              <FieldError errors={errors.password ? [errors.password] : undefined} />
+            </Field>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          Senha
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-          required
-        />
-      </div>
+            {formError && <FieldError>{formError}</FieldError>}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="rounded-md bg-foreground px-4 py-2 font-medium text-background disabled:opacity-50"
-      >
-        {isSubmitting ? "Entrando..." : "Entrar"}
-      </button>
-    </form>
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? "Entrando..." : "Entrar"}
+            </Button>
+          </FieldGroup>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

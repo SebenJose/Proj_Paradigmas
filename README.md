@@ -138,6 +138,7 @@ O `docker-compose.yml` da raiz só existe para orquestrar os dois junto com o ba
 - **Lombok** para reduzir boilerplate (getters/setters/construtores)
 - **JWT** + **Basic Auth** para autenticação (ver seção 2.5)
 - **Next.js 16** + **React 19** + **TypeScript** + **TailwindCSS 4** para o front-end
+- **shadcn/ui** (preset Nova) para os componentes genéricos de UI e **Zod** para validação de formulários
 - **Docker / Docker Compose** para empacotar e rodar tudo junto
 - **Insomnia/Postman** para testar a API manualmente
 
