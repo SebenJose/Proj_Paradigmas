@@ -1,6 +1,7 @@
 import { API_URL } from "./env";
 
 const TOKEN_KEY = "auth_token";
+export const TOKEN_CHANGE_EVENT = "auth-token-change";
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -9,10 +10,21 @@ export function getToken(): string | null {
 
 export function setToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
+  window.dispatchEvent(new Event(TOKEN_CHANGE_EVENT));
 }
 
 export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
+  window.dispatchEvent(new Event(TOKEN_CHANGE_EVENT));
+}
+
+function extractErrorMessage(body: string): string {
+  try {
+    const parsed = JSON.parse(body) as { message?: string };
+    return parsed.message ?? body;
+  } catch {
+    return body;
+  }
 }
 
 export class ApiError extends Error {
@@ -37,9 +49,10 @@ export async function apiFetch<T>(
   const response = await fetch(`${API_URL}${path}`, { ...options, headers });
 
   if (!response.ok) {
-    throw new ApiError(response.status, await response.text());
+    const text = await response.text();
+    throw new ApiError(response.status, extractErrorMessage(text));
   }
 
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
