@@ -9,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.RestClientException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -40,5 +41,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of(HttpStatus.NOT_FOUND.value(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<ErrorResponse> handleExternalApiFailure(RestClientException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(
+                        ErrorResponse.of(
+                                HttpStatus.BAD_GATEWAY.value(), "Falha ao consultar a Google Books API"));
     }
 }
