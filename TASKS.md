@@ -101,12 +101,12 @@ Valem para todas as tasks abaixo, nos dois projetos:
 
 > Siga o contrato documentado em "Contrato de API esperado pelo frontend" no topo deste arquivo. Quando terminar, apague `frontend/src/mocks/handlers/lists.ts` (e a referência em `handlers/index.ts`).
 
-- [ ] Criar entidade `BookList` em `model/BookList.java` (`@ManyToOne User`, `@ManyToMany Book`, `name`)
-- [ ] Criar `BookListRepository` em `repository/BookListRepository.java`
-- [ ] Criar `dto/BookListRequest.java` e `dto/BookListResponse.java`
-- [ ] Criar `BookListService` em `service/BookListService.java` (criar lista, adicionar/remover livro, nome único por usuário)
-- [ ] Criar `BookListController` em `controller/BookListController.java` (`POST /api/lists`, `POST /api/lists/{id}/books`, `DELETE /api/lists/{id}/books/{bookId}`, `GET /api/lists/me`)
-- [ ] **Testar**: criar a lista "Quero ler", adicionar 2 livros e listar
+- [x] Criar entidade `BookList` em `model/BookList.java` (`@ManyToOne User`, `@ManyToMany Book`, `name`)
+- [x] Criar `BookListRepository` em `repository/BookListRepository.java`
+- [x] Criar `dto/BookListRequest.java` e `dto/BookListResponse.java`
+- [x] Criar `BookListService` em `service/BookListService.java` (criar lista, adicionar/remover livro, nome único por usuário)
+- [x] Criar `BookListController` em `controller/BookListController.java` (`POST /api/lists`, `POST /api/lists/{id}/books`, `DELETE /api/lists/{id}/books/{bookId}`, `GET /api/lists/me`)
+- [x] **Testar**: criar a lista "Quero ler", adicionar 2 livros e listar
 
 ## Fase 5 — Backend: Dashboard
 
