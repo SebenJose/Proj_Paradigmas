@@ -112,11 +112,11 @@ Valem para todas as tasks abaixo, nos dois projetos:
 
 > Siga o contrato documentado em "Contrato de API esperado pelo frontend" no topo deste arquivo. Quando terminar, apague `frontend/src/mocks/handlers/dashboard.ts` (e a referência em `handlers/index.ts`).
 
-- [ ] Adicionar queries agregadas no `ReviewRepository` (top livros por média, livros mais avaliados, reviews recentes)
-- [ ] Criar `dto/DashboardResponse.java`
-- [ ] Criar `DashboardService` em `service/DashboardService.java`
-- [ ] Criar `DashboardController` em `controller/DashboardController.java` (`GET /api/dashboard`)
-- [ ] **Testar**: com pelo menos 3 livros avaliados por usuários diferentes, conferir se o dashboard reflete os dados certos
+- [x] Adicionar queries agregadas no `ReviewRepository` (top livros por média, livros mais avaliados, reviews recentes)
+- [x] Criar `dto/DashboardResponse.java`
+- [x] Criar `DashboardService` em `service/DashboardService.java`
+- [x] Criar `DashboardController` em `controller/DashboardController.java` (`GET /api/dashboard`)
+- [x] **Testar**: com pelo menos 3 livros avaliados por usuários diferentes, conferir se o dashboard reflete os dados certos
 
 ## Fase 6 — Frontend: Autenticação
 
