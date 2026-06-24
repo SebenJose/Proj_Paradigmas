@@ -182,3 +182,49 @@ O fluxo de autenticação combina os dois métodos pedidos no trabalho:
 - `frontend/Dockerfile` — build multi-stage equivalente, usando o modo `standalone` do Next.js.
 - `docker-compose.yml` (raiz) — sobe os três serviços (`postgres`, `backend`, `frontend`) na mesma rede, já com `healthcheck` no banco para o back-end só subir depois que o Postgres estiver pronto.
 - `backend/compose.yaml` — **não é o mesmo arquivo do compose da raiz**. É usado só pelo Spring Boot Docker Compose Support quando você roda a API direto pela IDE/`mvnw` (fora de Docker), para subir um Postgres automaticamente em desenvolvimento.
+
+---
+
+## 3. Endpoints da API e Variáveis de Ambiente
+
+### 3.1. Variável de Ambiente: `JWT_SECRET`
+
+A variável `JWT_SECRET` define a chave secreta usada para assinar e validar os tokens JWT gerados no login. 
+- **Ambiente de Desenvolvimento**: O sistema possui uma chave de desenvolvimento padrão configurada em `application.properties`, `.env.example` e `docker-compose.yml`.
+- **Ambiente de Produção**: Deve ser obrigatoriamente sobrescrita com um hash seguro de pelo menos 256 bits para garantir a segurança da autenticação.
+
+### 3.2. Catálogo de Endpoints da API
+
+Todas as chamadas (exceto o registro de novos usuários) exigem autenticação ativa.
+
+#### Autenticação (`/api/auth/**`)
+- `POST /api/auth/register` (Público) — Cria uma nova conta de usuário.
+  - **Body**: `{ "username": "...", "email": "...", "password": "..." }`
+- `POST /api/auth/login` (Basic Auth) — Autentica o usuário com Basic Auth e retorna o token JWT.
+  - **Header**: `Authorization: Basic <base64(username:password)>`
+  - **Resposta**: `{ "token": "..." }`
+- `GET /api/auth/me` (JWT) — Retorna o username do usuário autenticado no token.
+  - **Header**: `Authorization: Bearer <JWT_TOKEN>`
+
+#### Livros (`/api/books/**`)
+- `GET /api/books/search?q={query}` (JWT) — Realiza busca de livros na Google Books API e armazena os metadados localmente no cache do banco.
+- `GET /api/books/{googleBooksId}` (JWT) — Retorna as informações detalhadas de um livro específico.
+
+#### Avaliações (`/api/reviews/**`)
+- `GET /api/reviews/book/{googleBooksId}` (JWT) — Retorna a média de notas, a contagem total e a lista de avaliações escritas para um livro.
+  - **Resposta**: `{ "averageRating": 4.5, "reviewCount": 12, "reviews": [ ... ] }`
+- `POST /api/reviews` (JWT) — Cria uma nova avaliação para um livro. Lança conflito (409) caso o usuário já tenha avaliado o mesmo livro.
+  - **Body**: `{ "googleBooksId": "...", "rating": 5, "comment": "Muito bom!" }`
+- `GET /api/reviews/me` (JWT) — Retorna a lista de avaliações realizadas pelo próprio usuário autenticado.
+
+#### Listas de Livros (`/api/lists/**`)
+- `GET /api/lists/me` (JWT) — Lista todas as listas de livros criadas pelo usuário autenticado.
+- `POST /api/lists` (JWT) — Cria uma nova lista vazia. Lança conflito (409) caso o usuário já possua uma lista com o mesmo nome.
+  - **Body**: `{ "name": "Minha Lista" }`
+- `POST /api/lists/{id}/books` (JWT) — Adiciona um livro a uma lista existente.
+  - **Body**: `{ "googleBooksId": "...", "title": "...", "coverUrl": "..." }`
+- `DELETE /api/lists/{id}/books/{bookId}` (JWT) — Remove o livro (por seu `bookId` interno) da lista especificada.
+
+#### Dashboard (`/api/dashboard`)
+- `GET /api/dashboard` (JWT) — Retorna as estatísticas agrupadas para a visualização do painel.
+  - **Resposta**: `{ "topRated": [ ... ], "mostReviewed": [ ... ], "recentReviews": [ ... ] }`

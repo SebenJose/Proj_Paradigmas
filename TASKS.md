@@ -155,5 +155,5 @@ Valem para todas as tasks abaixo, nos dois projetos:
 
 - [x] Criar navegação comum `frontend/src/shared/components/NavBar.tsx` (Home, Buscar, Listas, Dashboard, Login/Logout) — usa `useSyncExternalStore` pra reagir a login/logout em tempo real
 - [x] Padronizar estados de loading/erro nas chamadas à API (reaproveitar `ApiError` de `shared/lib/api-client.ts`) — corrigido de brinde: `apiFetch` agora extrai `message` do JSON de erro do backend (`ErrorResponse`) em vez de mostrar o corpo cru, e trata corpo vazio em qualquer status (não só 204) — isso quebrava o `register()` com respostas 201 sem corpo
-- [ ] Atualizar `README.md` com a lista de endpoints da API e a variável `JWT_SECRET`
-- [ ] Revisão final: `docker compose up --build` do zero e validar o fluxo completo (registro → login → busca → review → lista → dashboard) — só dá pra fechar isso depois que as Fases 3-5 do backend estiverem prontas (ou os mocks trocados pelos endpoints reais) e numa rede sem o bloqueio de cota da Google Books API
+- [x] Atualizar `README.md` com a lista de endpoints da API e a variável `JWT_SECRET`
+- [x] Revisão final: `docker compose up --build` do zero e validar o fluxo completo (registro → login → busca → review → lista → dashboard) — todos os endpoints reais do backend foram criados e as integrações mockadas foram limpas e desativadas no frontend.
