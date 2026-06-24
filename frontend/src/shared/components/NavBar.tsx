@@ -1,44 +1,22 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getToken, TOKEN_CHANGE_EVENT } from "@/shared/lib/api-client";
+import { useAuth } from "@/shared/hooks/useAuth";
 import { logout } from "@/features/auth";
 import { Button } from "@/shared/components/ui/button";
+import { BookOpen, LayoutDashboard, Library, LogOut, UserCircle2 } from "lucide-react";
 
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/books", label: "Buscar" },
-  { href: "/lists", label: "Listas" },
-  { href: "/dashboard", label: "Dashboard" },
+const authLinks = [
+  { href: "/books", label: "Explorar", icon: BookOpen },
+  { href: "/lists", label: "Minhas Listas", icon: Library },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
 ];
-
-function subscribeToTokenChange(callback: () => void) {
-  window.addEventListener(TOKEN_CHANGE_EVENT, callback);
-  window.addEventListener("storage", callback);
-  return () => {
-    window.removeEventListener(TOKEN_CHANGE_EVENT, callback);
-    window.removeEventListener("storage", callback);
-  };
-}
-
-function getIsAuthenticatedSnapshot() {
-  return getToken() !== null;
-}
-
-function getServerSnapshot() {
-  return false;
-}
 
 export function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
-  const isAuthenticated = useSyncExternalStore(
-    subscribeToTokenChange,
-    getIsAuthenticatedSnapshot,
-    getServerSnapshot,
-  );
+  const { isAuthenticated } = useAuth();
 
   function handleLogout() {
     logout();
@@ -46,32 +24,63 @@ export function NavBar() {
   }
 
   return (
-    <nav className="flex items-center justify-between gap-4 border-b px-6 py-3">
-      <div className="flex items-center gap-4">
-        {navLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={
-              pathname === link.href
-                ? "text-sm font-medium underline"
-                : "text-sm font-medium text-muted-foreground hover:text-foreground"
-            }
-          >
-            {link.label}
+    <nav className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-md px-6 py-4 transition-all">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="rounded-xl bg-primary/10 p-2 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <span className="text-xl font-bold tracking-tight font-serif text-foreground">
+              Paradigmas<span className="text-primary">.</span>
+            </span>
           </Link>
-        ))}
-      </div>
 
-      {isAuthenticated ? (
-        <Button variant="ghost" size="sm" onClick={handleLogout}>
-          Sair
-        </Button>
-      ) : (
-        <Link href="/login" className="text-sm font-medium underline">
-          Entrar
-        </Link>
-      )}
+          {isAuthenticated && (
+            <div className="hidden md:flex items-center gap-1">
+              {authLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4">
+          {isAuthenticated ? (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </Button>
+          ) : (
+            <Link href="/login">
+              <Button size="sm" className="rounded-full px-6 font-medium shadow-sm transition-transform hover:scale-105">
+                <UserCircle2 className="h-4 w-4 mr-2" />
+                Entrar
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
     </nav>
   );
 }

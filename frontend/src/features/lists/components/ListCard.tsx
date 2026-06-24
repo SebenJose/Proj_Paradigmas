@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen, X } from "lucide-react";
+import { BookOpen, FolderOpen, Trash2 } from "lucide-react";
 import { removeBook } from "../services/list.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
@@ -28,41 +28,53 @@ export function ListCard({ list, onChange }: ListCardProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{list.name}</CardTitle>
+    <Card className="h-full border-border/40 bg-card/60 backdrop-blur-sm shadow-md transition-all hover:shadow-lg flex flex-col">
+      <CardHeader className="border-b border-border/40 bg-muted/20 pb-4">
+        <div className="flex items-center gap-2">
+          <FolderOpen className="h-5 w-5 text-primary" />
+          <CardTitle className="text-xl font-serif">{list.name}</CardTitle>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          {list.books.length} {list.books.length === 1 ? 'livro' : 'livros'}
+        </p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow pt-4">
         {list.books.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum livro nessa lista ainda.</p>
+          <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground/50">
+            <BookOpen className="h-8 w-8 mb-2 opacity-50" />
+            <p className="text-sm">Nenhum livro nessa lista ainda.</p>
+          </div>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-3">
             {list.books.map((book) => (
-              <li key={book.id} className="flex items-center gap-3">
-                <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-muted">
-                  {book.coverUrl ? (
-                    <Image src={book.coverUrl} alt={book.title} fill sizes="40px" className="object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                      <BookOpen className="size-4" />
-                    </div>
-                  )}
+              <li key={book.id} className="group flex items-center justify-between gap-3 rounded-md border border-transparent p-2 transition-colors hover:border-border/50 hover:bg-muted/30">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="relative h-12 w-8 shrink-0 overflow-hidden rounded shadow-sm bg-muted border border-border/50">
+                    {book.coverUrl ? (
+                      <Image src={book.coverUrl} alt={book.title} fill sizes="32px" className="object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-muted-foreground/50">
+                        <BookOpen className="size-3" />
+                      </div>
+                    )}
+                  </div>
+                  <Link
+                    href={`/books/${encodeURIComponent(book.googleBooksId)}`}
+                    className="truncate text-sm font-medium hover:text-primary transition-colors"
+                  >
+                    {book.title}
+                  </Link>
                 </div>
-                <Link
-                  href={`/books/${encodeURIComponent(book.googleBooksId)}`}
-                  className="flex-1 text-sm font-medium hover:underline"
-                >
-                  {book.title}
-                </Link>
                 <Button
                   type="button"
                   variant="ghost"
-                  size="icon-sm"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10"
                   disabled={removingId === book.id}
                   onClick={() => handleRemove(book.id)}
                   aria-label={`Remover ${book.title} da lista`}
                 >
-                  <X className="size-4" />
+                  <Trash2 className="size-4" />
                 </Button>
               </li>
             ))}
