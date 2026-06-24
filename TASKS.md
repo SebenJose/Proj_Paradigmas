@@ -90,12 +90,12 @@ Valem para todas as tasks abaixo, nos dois projetos:
 
 > Siga o contrato documentado em "Contrato de API esperado pelo frontend" no topo deste arquivo — o frontend já está pronto contra ele (mockado via MSW). Quando essa fase terminar, é só apagar `frontend/src/mocks/handlers/reviews.ts` (e a referência em `handlers/index.ts`) que o frontend passa a falar com o backend real sem nenhuma outra mudança.
 
-- [ ] Criar entidade `Review` em `model/Review.java` (`@ManyToOne User`, `@ManyToOne Book`, `rating 1-5`, `comment`, constraint única `user_id + book_id`)
-- [ ] Criar `ReviewRepository` em `repository/ReviewRepository.java` (`findByBookId`, `existsByUserAndBook`, query de média/contagem por livro)
-- [ ] Criar `dto/ReviewRequest.java` e `dto/ReviewResponse.java`
-- [ ] Criar `ReviewService` em `service/ReviewService.java` (valida nota 1-5, impede review duplicado, cria o `Book` no cache se ainda não existir)
-- [ ] Criar `ReviewController` em `controller/ReviewController.java` com `GET /api/reviews/book/{googleBooksId}` (média + contagem + lista), `POST /api/reviews`, `GET /api/reviews/me` — **não** mexe em `BookController`/`BookService` (ver nota sobre o contrato no topo do arquivo)
-- [ ] **Testar**: criar um review, tentar duplicar (deve falhar com 409) e conferir a média em `GET /api/reviews/book/{googleBooksId}`
+- [x] Criar entidade `Review` em `model/Review.java` (`@ManyToOne User`, `@ManyToOne Book`, `rating 1-5`, `comment`, constraint única `user_id + book_id`)
+- [x] Criar `ReviewRepository` em `repository/ReviewRepository.java` (`findByBookId`, `existsByUserAndBook`, query de média/contagem por livro)
+- [x] Criar `dto/ReviewRequest.java` e `dto/ReviewResponse.java`
+- [x] Criar `ReviewService` em `service/ReviewService.java` (valida nota 1-5, impede review duplicado, cria o `Book` no cache se ainda não existir)
+- [x] Criar `ReviewController` em `controller/ReviewController.java` com `GET /api/reviews/book/{googleBooksId}` (média + contagem + lista), `POST /api/reviews`, `GET /api/reviews/me` — **não** mexe em `BookController`/`BookService` (ver nota sobre o contrato no topo do arquivo)
+- [x] **Testar**: criar um review, tentar duplicar (deve falhar com 409) e conferir a média em `GET /api/reviews/book/{googleBooksId}`
 
 ## Fase 4 — Backend: Listas de livros
 
