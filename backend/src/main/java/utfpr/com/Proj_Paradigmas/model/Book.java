@@ -38,7 +38,7 @@ public class Book {
     @Column(nullable = false)
     private String googleBooksId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String title;
 
     @ElementCollection
@@ -50,6 +50,7 @@ public class Book {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(columnDefinition = "TEXT")
     private String coverUrl;
 
     private String publishedDate;

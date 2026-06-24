@@ -45,6 +45,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RestClientException.class)
     public ResponseEntity<ErrorResponse> handleExternalApiFailure(RestClientException ex) {
+        ex.printStackTrace();
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                 .body(
                         ErrorResponse.of(
