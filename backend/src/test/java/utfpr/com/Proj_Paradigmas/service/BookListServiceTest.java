@@ -55,4 +55,23 @@ public class BookListServiceTest {
         assertFalse(response.isPrivate());
         assertEquals("Lista Pública de Teste", response.name());
     }
+
+    @Test
+    public void testUpdatePrivacy() {
+        // Nota: listuser já é criado em @BeforeEach ou podemos recuperá-lo/criá-lo isoladamente.
+        // Como a classe agora é @Transactional, podemos criar um usuário localmente no teste para garantir isolação total.
+        User user = User.builder()
+                .username("updateuser")
+                .email("updateuser@email.com")
+                .passwordHash("hashedpassword")
+                .build();
+        userRepository.save(user);
+        
+        BookListRequest createReq = new BookListRequest("Lista Mutável", false);
+        BookListResponse created = bookListService.createList("updateuser", createReq);
+        assertFalse(created.isPrivate());
+
+        BookListResponse updated = bookListService.updatePrivacy("updateuser", created.id(), true);
+        assertTrue(updated.isPrivate());
+    }
 }

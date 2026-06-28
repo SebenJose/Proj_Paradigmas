@@ -89,6 +89,20 @@ public class BookListService {
         return toResponse(savedList);
     }
 
+    @Transactional
+    public BookListResponse updatePrivacy(String username, Long listId, boolean isPrivate) {
+        BookList bookList = bookListRepository.findById(listId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lista não encontrada"));
+
+        if (!bookList.getUser().getUsername().equals(username)) {
+            throw new ResourceNotFoundException("Lista não encontrada");
+        }
+
+        bookList.setPrivate(isPrivate);
+        BookList savedList = bookListRepository.save(bookList);
+        return toResponse(savedList);
+    }
+
     private BookListResponse toResponse(BookList list) {
         List<BookSummaryResponse> books = list.getBooks().stream()
                 .map(this::toSummaryResponse)

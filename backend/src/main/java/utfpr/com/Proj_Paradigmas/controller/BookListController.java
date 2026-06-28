@@ -53,4 +53,12 @@ public class BookListController {
             Authentication authentication) {
         return ResponseEntity.ok(bookListService.removeBookFromList(authentication.getName(), listId, bookId));
     }
+
+    @org.springframework.web.bind.annotation.PatchMapping("/{id}/privacy")
+    public ResponseEntity<BookListResponse> updatePrivacy(
+            @PathVariable("id") Long listId,
+            @Valid @RequestBody utfpr.com.Proj_Paradigmas.dto.UpdateListPrivacyRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(bookListService.updatePrivacy(authentication.getName(), listId, request.isPrivate()));
+    }
 }
