@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@org.springframework.transaction.annotation.Transactional
 public class BookListServiceTest {
 
     @Autowired
@@ -36,5 +37,22 @@ public class BookListServiceTest {
         assertNotNull(response);
         assertTrue(response.isPrivate());
         assertEquals("Lista Privada de Teste", response.name());
+    }
+
+    @Test
+    public void testCreatePublicListByDefault() {
+        User user = User.builder()
+                .username("publiclistuser")
+                .email("publiclistuser@email.com")
+                .passwordHash("hashedpassword")
+                .build();
+        userRepository.save(user);
+
+        BookListRequest request = new BookListRequest("Lista Pública de Teste", false);
+        BookListResponse response = bookListService.createList("publiclistuser", request);
+
+        assertNotNull(response);
+        assertFalse(response.isPrivate());
+        assertEquals("Lista Pública de Teste", response.name());
     }
 }

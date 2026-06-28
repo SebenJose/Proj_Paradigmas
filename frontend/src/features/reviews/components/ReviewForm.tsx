@@ -9,13 +9,7 @@ import { ApiError } from "@/shared/lib/api-client";
 import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/shared/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select";
+import { StarRating } from "@/shared/components/StarRating";
 
 interface ReviewFormProps {
   googleBooksId: string;
@@ -33,15 +27,14 @@ export function ReviewForm({ googleBooksId, onCreated }: ReviewFormProps) {
     formState: { errors, isSubmitting },
   } = useForm<ReviewFormValues>({
     resolver: zodResolver(reviewSchema),
-    defaultValues: { rating: 5, comment: "" },
+    defaultValues: { rating: 5.0, comment: "" },
   });
 
   async function onSubmit(values: ReviewFormValues) {
     setFormError(null);
-
     try {
       await create({ googleBooksId, ...values });
-      reset({ rating: 5, comment: "" });
+      reset({ rating: 5.0, comment: "" });
       onCreated();
     } catch (error) {
       setFormError(
@@ -54,26 +47,16 @@ export function ReviewForm({ googleBooksId, onCreated }: ReviewFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <FieldGroup>
         <Field data-invalid={!!errors.rating}>
-          <FieldLabel htmlFor="rating">Nota</FieldLabel>
+          <FieldLabel htmlFor="rating">Sua Avaliação</FieldLabel>
           <Controller
             control={control}
             name="rating"
             render={({ field }) => (
-              <Select
-                value={String(field.value)}
-                onValueChange={(value) => field.onChange(Number(value))}
-              >
-                <SelectTrigger id="rating" className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[5, 4, 3, 2, 1].map((value) => (
-                    <SelectItem key={value} value={String(value)}>
-                      {value} {value === 1 ? "estrela" : "estrelas"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <StarRating
+                rating={field.value}
+                onChange={field.onChange}
+                interactive
+              />
             )}
           />
           <FieldError errors={errors.rating ? [errors.rating] : undefined} />
@@ -81,13 +64,13 @@ export function ReviewForm({ googleBooksId, onCreated }: ReviewFormProps) {
 
         <Field data-invalid={!!errors.comment}>
           <FieldLabel htmlFor="comment">Comentário</FieldLabel>
-          <Textarea id="comment" rows={3} {...register("comment")} />
+          <Textarea id="comment" rows={3} {...register("comment")} placeholder="Escreva sua opinião..." />
           <FieldError errors={errors.comment ? [errors.comment] : undefined} />
         </Field>
 
         {formError && <FieldError>{formError}</FieldError>}
 
-        <Button type="submit" disabled={isSubmitting} className="w-fit">
+        <Button type="submit" disabled={isSubmitting} className="w-full active-press hover-glow">
           {isSubmitting ? "Enviando..." : "Enviar avaliação"}
         </Button>
       </FieldGroup>

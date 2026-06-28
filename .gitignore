@@ -19,3 +19,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Arquivo de análise local
+analise_projeto.md
+

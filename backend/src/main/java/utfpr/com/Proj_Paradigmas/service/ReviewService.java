@@ -25,6 +25,10 @@ public class ReviewService {
 
     @Transactional
     public ReviewResponse createReview(String username, ReviewRequest request) {
+        if (request.rating() < 1.0 || request.rating() > 5.0 || (request.rating() * 2) % 1 != 0) {
+            throw new IllegalArgumentException("A nota deve ser entre 1 e 5, com incrementos de 0.5");
+        }
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
@@ -32,10 +36,6 @@ public class ReviewService {
 
         if (reviewRepository.existsByUserAndBook(user, book)) {
             throw new ConflictException("Você já avaliou este livro");
-        }
-
-        if (request.rating() < 1 || request.rating() > 5) {
-            throw new IllegalArgumentException("A nota deve ser entre 1 e 5");
         }
 
         Review review = Review.builder()
