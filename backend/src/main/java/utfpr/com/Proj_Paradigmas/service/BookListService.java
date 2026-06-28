@@ -99,8 +99,7 @@ public class BookListService {
         }
 
         bookList.setPrivate(isPrivate);
-        BookList savedList = bookListRepository.save(bookList);
-        return toResponse(savedList);
+        return toResponse(bookList);
     }
 
     private BookListResponse toResponse(BookList list) {

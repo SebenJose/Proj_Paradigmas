@@ -4,8 +4,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import utfpr.com.Proj_Paradigmas.dto.BookListRequest;
 import utfpr.com.Proj_Paradigmas.dto.BookListResponse;
+import utfpr.com.Proj_Paradigmas.exception.ResourceNotFoundException;
 import utfpr.com.Proj_Paradigmas.model.User;
 import utfpr.com.Proj_Paradigmas.repository.UserRepository;
 
@@ -13,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@org.springframework.transaction.annotation.Transactional
+@Transactional
 public class BookListServiceTest {
 
     @Autowired
@@ -73,5 +75,36 @@ public class BookListServiceTest {
 
         BookListResponse updated = bookListService.updatePrivacy("updateuser", created.id(), true);
         assertTrue(updated.isPrivate());
+    }
+
+    @Test
+    public void testUpdatePrivacyListNotFound() {
+        assertThrows(ResourceNotFoundException.class, () -> {
+            bookListService.updatePrivacy("updateuser", 9999L, true);
+        });
+    }
+
+    @Test
+    public void testUpdatePrivacyUnauthorizedUser() {
+        User userA = User.builder()
+                .username("usera")
+                .email("usera@email.com")
+                .passwordHash("hashedpassword")
+                .build();
+        userRepository.save(userA);
+
+        User userB = User.builder()
+                .username("userb")
+                .email("userb@email.com")
+                .passwordHash("hashedpassword")
+                .build();
+        userRepository.save(userB);
+
+        BookListRequest createReq = new BookListRequest("Lista do User A", false);
+        BookListResponse created = bookListService.createList("usera", createReq);
+
+        assertThrows(ResourceNotFoundException.class, () -> {
+            bookListService.updatePrivacy("userb", created.id(), true);
+        });
     }
 }
