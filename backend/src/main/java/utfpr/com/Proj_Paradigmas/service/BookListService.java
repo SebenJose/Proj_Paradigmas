@@ -32,6 +32,14 @@ public class BookListService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<BookListResponse> getUserPublicLists(String username) {
+        return bookListRepository.findByUserUsernameAndIsPrivateFalse(username)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional
     public BookListResponse createList(String username, BookListRequest request) {
         User user = userRepository.findByUsername(username)

@@ -9,6 +9,7 @@ public interface BookListRepository extends JpaRepository<BookList, Long> {
 
     List<BookList> findByUserUsername(String username);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"books"})
     List<BookList> findByUserUsernameAndIsPrivateFalse(String username);
 
     boolean existsByUserAndName(User user, String name);
