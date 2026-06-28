@@ -127,7 +127,9 @@ export function DashboardView() {
             {dashboard.recentReviews.map((review) => (
               <li key={review.id} className="backdrop-blur-glass p-4 rounded-lg shadow flex flex-col gap-2 transition-transform duration-200 hover:scale-[1.02]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-primary">{review.username}</span>
+                  <Link href={`/profile/${encodeURIComponent(review.username)}`} className="text-xs font-semibold text-primary hover:underline hover:text-primary-hover transition-colors">
+                    {review.username}
+                  </Link>
                   <StarRating rating={review.rating} className="scale-75 origin-right" />
                 </div>
                 <p className="text-xs text-muted-foreground italic border-l border-primary/20 pl-2 py-0.5">
