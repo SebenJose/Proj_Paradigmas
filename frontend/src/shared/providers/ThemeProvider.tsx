@@ -16,18 +16,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
     let activeTheme: Theme = "light";
-    if (savedTheme === "light" || savedTheme === "dark") {
-      activeTheme = savedTheme;
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      activeTheme = "dark";
+    try {
+      const savedTheme = localStorage.getItem("theme") as Theme | null;
+      if (savedTheme === "light" || savedTheme === "dark") {
+        activeTheme = savedTheme;
+      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        activeTheme = "dark";
+      }
+    } catch (error) {
+      console.warn("Storage access not available, falling back to system theme:", error);
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        activeTheme = "dark";
+      }
     }
-    const initializeTheme = () => {
-      setTheme(activeTheme);
-      setMounted(true);
-    };
-    initializeTheme();
+    
+    setTheme(activeTheme);
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -39,7 +44,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.remove("dark");
     }
-    localStorage.setItem("theme", theme);
+
+    try {
+      localStorage.setItem("theme", theme);
+    } catch (error) {
+      console.error("Failed to save theme to localStorage", error);
+    }
   }, [theme, mounted]);
 
   const toggleTheme = useCallback(() => {
@@ -62,3 +72,4 @@ export function useTheme() {
   }
   return context;
 }
+

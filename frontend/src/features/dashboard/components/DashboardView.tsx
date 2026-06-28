@@ -2,37 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Clock, MessageSquare, Star, TrendingUp } from "lucide-react";
+import { MessageSquare, Star, TrendingUp } from "lucide-react";
 import { getDashboard } from "../services/dashboard.service";
 import { StarRating } from "@/shared/components/StarRating";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import type { BookRatingSummary, Dashboard } from "../types";
-
-function BookRatingRow({ book, index }: { book: BookRatingSummary; index?: number }) {
-  return (
-    <li className="group relative flex items-center justify-between gap-3 rounded-lg border border-transparent p-2 transition-all hover:border-border/50 hover:bg-muted/30">
-      <div className="flex items-center gap-3 overflow-hidden">
-        {index !== undefined && (
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-            {index + 1}
-          </span>
-        )}
-        <Link
-          href={`/books/${encodeURIComponent(book.googleBooksId)}`}
-          className="truncate text-sm font-medium transition-colors hover:text-primary"
-        >
-          {book.title}
-        </Link>
-      </div>
-      <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-background px-2 py-1 shadow-sm border border-border/50">
-        <StarRating rating={book.averageRating} />
-        <span className="text-[10px] font-medium text-muted-foreground ml-1">
-          ({book.reviewCount})
-        </span>
-      </div>
-    </li>
-  );
-}
+import { BookCard } from "@/features/books/components/BookCard";
+import type { Dashboard } from "../types";
 
 export function DashboardView() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -49,92 +23,124 @@ export function DashboardView() {
       <p className="font-medium">{error}</p>
     </div>
   );
+
   if (!dashboard) return (
-    <div className="flex h-64 w-full items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 w-full max-w-6xl mx-auto px-4 py-8">
+      <div className="lg:col-span-3 space-y-12">
+        <div className="space-y-4">
+          <div className="h-8 w-48 bg-muted/60 animate-pulse rounded" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-[2/3] w-full bg-muted/60 animate-pulse rounded-md" />
+            ))}
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="h-8 w-48 bg-muted/60 animate-pulse rounded" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-[2/3] w-full bg-muted/60 animate-pulse rounded-md" />
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="lg:col-span-1 space-y-4">
+        <div className="h-8 w-32 bg-muted/60 animate-pulse rounded" />
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 w-full bg-muted/60 animate-pulse rounded-lg" />
+          ))}
+        </div>
+      </div>
     </div>
   );
 
   return (
-    <div className="grid w-full max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
-      <Card className="border-border/40 bg-card/60 backdrop-blur-sm shadow-lg transition-all hover:shadow-xl">
-        <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4 border-b border-border/40">
-          <div className="rounded-lg bg-amber-500/10 p-2 text-amber-500">
-            <Star className="h-5 w-5" />
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 w-full max-w-6xl mx-auto px-4 py-8">
+      <div className="lg:col-span-3 space-y-12">
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-border/20 pb-2">
+            <TrendingUp className="h-5 w-5 text-red-500" />
+            <h2 className="text-xl font-serif font-semibold text-foreground/80">Os Mais Populares</h2>
           </div>
-          <CardTitle className="text-xl font-serif">Aclamação da Crítica</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          {dashboard.topRated.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground/70">
-              <Star className="h-8 w-8 mb-2 opacity-20" />
-              <p className="text-sm">Sem avaliações ainda.</p>
-            </div>
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {dashboard.topRated.map((book, i) => (
-                <BookRatingRow key={book.googleBooksId} book={book} index={i} />
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="border-border/40 bg-card/60 backdrop-blur-sm shadow-lg transition-all hover:shadow-xl">
-        <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4 border-b border-border/40">
-          <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-500">
-            <TrendingUp className="h-5 w-5" />
-          </div>
-          <CardTitle className="text-xl font-serif">Os Mais Populares</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
           {dashboard.mostReviewed.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground/70">
-              <TrendingUp className="h-8 w-8 mb-2 opacity-20" />
-              <p className="text-sm">Sem avaliações ainda.</p>
-            </div>
+            <p className="text-sm text-muted-foreground">Nenhum livro popular no momento.</p>
           ) : (
-            <ul className="flex flex-col gap-1">
-              {dashboard.mostReviewed.map((book, i) => (
-                <BookRatingRow key={book.googleBooksId} book={book} index={i} />
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="md:col-span-2 border-border/40 bg-card/60 backdrop-blur-sm shadow-lg">
-        <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4 border-b border-border/40">
-          <div className="rounded-lg bg-blue-500/10 p-2 text-blue-500">
-            <Clock className="h-5 w-5" />
-          </div>
-          <CardTitle className="text-xl font-serif">Atividade Recente</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          {dashboard.recentReviews.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground/70">
-              <MessageSquare className="h-10 w-10 mb-3 opacity-20" />
-              <p className="text-sm">O clube do livro está quieto no momento.</p>
-            </div>
-          ) : (
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {dashboard.recentReviews.map((review) => (
-                <li key={review.id} className="flex flex-col gap-2 rounded-xl border border-border/50 bg-muted/20 p-4 transition-colors hover:bg-muted/40">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold flex items-center gap-1.5 text-primary">
-                      {review.username}
-                    </span>
-                    <StarRating rating={review.rating} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {dashboard.mostReviewed.map((book) => (
+                <div key={book.googleBooksId} className="flex flex-col gap-1">
+                  <BookCard book={{
+                    googleBooksId: book.googleBooksId,
+                    title: book.title,
+                    coverUrl: book.coverUrl,
+                    authors: [],
+                    publishedDate: null
+                  }} />
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground px-1">
+                    <span className="font-mono">{book.averageRating.toFixed(1)} ★</span>
+                    <span>{book.reviewCount} resenhas</span>
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed italic border-l-2 border-primary/20 pl-3 py-1">
-                    "{review.comment}"
-                  </p>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </section>
+
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 border-b border-border/20 pb-2">
+            <Star className="h-5 w-5 text-yellow-500" />
+            <h2 className="text-xl font-serif font-semibold text-foreground/80">Aclamação da Crítica</h2>
+          </div>
+          {dashboard.topRated.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma recomendação no momento.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {dashboard.topRated.map((book) => (
+                <div key={book.googleBooksId} className="flex flex-col gap-1">
+                  <BookCard book={{
+                    googleBooksId: book.googleBooksId,
+                    title: book.title,
+                    coverUrl: book.coverUrl,
+                    authors: [],
+                    publishedDate: null
+                  }} />
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground px-1">
+                    <span className="font-mono">{book.averageRating.toFixed(1)} ★</span>
+                    <span>{book.reviewCount} resenhas</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      <div className="lg:col-span-1 space-y-6">
+        <div className="flex items-center gap-2 border-b border-border/20 pb-2">
+          <MessageSquare className="h-5 w-5 text-blue-500" />
+          <h2 className="text-xl font-serif font-semibold text-foreground/80">Atividade Recente</h2>
+        </div>
+        {dashboard.recentReviews.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma atividade recente.</p>
+        ) : (
+          <ul className="space-y-4">
+            {dashboard.recentReviews.map((review) => (
+              <li key={review.id} className="backdrop-blur-glass p-4 rounded-lg shadow flex flex-col gap-2 transition-transform duration-200 hover:scale-[1.02]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-primary">{review.username}</span>
+                  <StarRating rating={review.rating} className="scale-75 origin-right" />
+                </div>
+                <p className="text-xs text-muted-foreground italic border-l border-primary/20 pl-2 py-0.5">
+                  {"\""}{review.comment || "Sem comentário."}{"\""}
+                </p>
+                <Link href={`/books/${encodeURIComponent(review.googleBooksId)}`} className="text-[10px] text-right text-muted-foreground hover:text-primary transition-colors">
+                  Ver livro &rarr;
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
