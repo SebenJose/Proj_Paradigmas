@@ -8,13 +8,16 @@ import { getByBook } from "@/features/reviews/services/review.service";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
 import { ReviewList } from "@/features/reviews/components/ReviewList";
 import { AddToListButton } from "@/features/lists/components/AddToListButton";
+import { BookPreview } from "./BookPreview";
 import type { BookDetail } from "../types";
 import type { BookReviews } from "@/features/reviews/types";
+
 
 export function BookDetailView({ googleBooksId }: { googleBooksId: string }) {
   const [book, setBook] = useState<BookDetail | null>(null);
   const [reviews, setReviews] = useState<BookReviews | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"synopsis" | "reviews" | "preview">("synopsis");
 
   const loadReviews = useCallback(() => {
     getByBook(googleBooksId)
@@ -102,29 +105,86 @@ export function BookDetailView({ googleBooksId }: { googleBooksId: string }) {
             </div>
           </div>
 
-          {book.description && (
-            <div className="space-y-2 border-t border-border/20 pt-6">
-              <h3 className="font-serif text-lg font-medium text-foreground/80">Sinopse</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground/90 text-justify">
-                {book.description}
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-6 border-t border-border/20 pt-6">
-            <h2 className="text-2xl font-serif font-medium text-foreground/80">Críticas de Leitores</h2>
-            
-            <div>
-              {reviews && reviews.reviews.length > 0 ? (
-                <ReviewList data={reviews} />
-              ) : (
-                <div className="flex flex-col items-center justify-center p-12 text-center border rounded-xl bg-card/20 border-dashed border-border/40">
-                  <BookOpen className="h-10 w-10 text-muted-foreground/30 mb-3" />
-                  <p className="text-muted-foreground text-sm font-medium">Nenhuma avaliação cadastrada</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">Seja o primeiro a avaliar e opinar sobre este livro!</p>
-                </div>
+          {/* Tabs Navigation */}
+          <div className="border-b border-border/20 pt-6">
+            <div className="flex gap-6">
+              <button
+                onClick={() => setActiveTab("synopsis")}
+                className={`pb-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+                  activeTab === "synopsis"
+                    ? "border-primary text-foreground font-semibold"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Sinopse
+              </button>
+              <button
+                onClick={() => setActiveTab("reviews")}
+                className={`pb-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+                  activeTab === "reviews"
+                    ? "border-primary text-foreground font-semibold"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Críticas ({reviews?.reviews.length ?? 0})
+              </button>
+              {book.embeddable === true && (
+                <button
+                  onClick={() => setActiveTab("preview")}
+                  className={`pb-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
+                    activeTab === "preview"
+                      ? "border-primary text-foreground font-semibold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Prévia
+                </button>
               )}
             </div>
+          </div>
+
+          {/* Tab Contents */}
+          <div className="pt-6">
+            {activeTab === "synopsis" && (
+              <div className="space-y-4">
+                {book.description ? (
+                  <p className="text-sm leading-relaxed text-muted-foreground/90 text-justify">
+                    {book.description}
+                  </p>
+                ) : (
+                  <p className="text-sm italic text-muted-foreground">
+                    Nenhuma sinopse disponível.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {activeTab === "reviews" && (
+              <div className="space-y-8">
+                <div className="space-y-6">
+                  {reviews && reviews.reviews.length > 0 ? (
+                    <ReviewList data={reviews} />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-12 text-center border rounded-xl bg-card/20 border-dashed border-border/40">
+                      <BookOpen className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                      <p className="text-muted-foreground text-sm font-medium">Nenhuma avaliação cadastrada</p>
+                      <p className="text-xs text-muted-foreground/70 mt-1">Seja o primeiro a avaliar e opinar sobre este livro!</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-border/20 pt-6">
+                  <h3 className="text-lg font-serif font-medium text-foreground/80 mb-4">Escrever uma Crítica</h3>
+                  <ReviewForm googleBooksId={googleBooksId} onCreated={loadReviews} />
+                </div>
+              </div>
+            )}
+
+            {activeTab === "preview" && book.embeddable === true && (
+              <div className="space-y-4">
+                <BookPreview googleBooksId={book.googleBooksId} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -136,10 +196,6 @@ export function BookDetailView({ googleBooksId }: { googleBooksId: string }) {
                 title={book.title}
                 coverUrl={book.coverUrl}
               />
-            </div>
-            
-            <div className="border-t border-border/20 pt-5">
-              <ReviewForm googleBooksId={googleBooksId} onCreated={loadReviews} />
             </div>
           </div>
         </div>
