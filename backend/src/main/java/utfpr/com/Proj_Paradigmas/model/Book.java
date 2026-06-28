@@ -56,4 +56,6 @@ public class Book {
     private String publishedDate;
 
     private Integer pageCount;
+
+    private Boolean embeddable;
 }
