@@ -37,6 +37,7 @@ public class DashboardService {
                 review.getId(),
                 review.getUser().getUsername(),
                 review.getBook().getGoogleBooksId(),
+                review.getBook().getTitle(),
                 review.getRating(),
                 review.getComment(),
                 review.getCreatedAt()

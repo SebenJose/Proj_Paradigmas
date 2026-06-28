@@ -2,6 +2,7 @@ export interface Review {
   id: number;
   username: string;
   googleBooksId: string;
+  bookTitle?: string;
   rating: number;
   comment: string;
   createdAt: string;

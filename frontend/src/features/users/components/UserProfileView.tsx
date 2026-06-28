@@ -14,9 +14,17 @@ export function UserProfileView({ username }: { username: string }) {
   const [activeTab, setActiveTab] = useState<"lists" | "reviews">("lists");
 
   useEffect(() => {
+    let active = true;
     getUserProfile(username)
-      .then(setProfile)
-      .catch(() => setError("Não foi possível carregar o perfil do usuário."));
+      .then((data) => {
+        if (active) setProfile(data);
+      })
+      .catch(() => {
+        if (active) setError("Não foi possível carregar o perfil do usuário.");
+      });
+    return () => {
+      active = false;
+    };
   }, [username]);
 
   if (error) return (
@@ -93,7 +101,7 @@ export function UserProfileView({ username }: { username: string }) {
                             coverUrl: book.coverUrl,
                             authors: [],
                             publishedDate: null
-                          }} />
+                          }} showActions={false} />
                         </div>
                       ))}
                     </div>
