@@ -62,7 +62,8 @@ public class BookService {
                 book.getDescription(),
                 book.getCoverUrl(),
                 book.getPublishedDate(),
-                book.getPageCount());
+                book.getPageCount(),
+                book.getEmbeddable());
     }
 
     private Book toEntity(GoogleBookVolumeDto dto) {
@@ -75,6 +76,7 @@ public class BookService {
                 .coverUrl(info.imageLinks() != null ? info.imageLinks().thumbnail() : null)
                 .publishedDate(info.publishedDate())
                 .pageCount(info.pageCount())
+                .embeddable(dto.accessInfo() != null && Boolean.TRUE.equals(dto.accessInfo().embeddable()))
                 .build();
     }
 }
