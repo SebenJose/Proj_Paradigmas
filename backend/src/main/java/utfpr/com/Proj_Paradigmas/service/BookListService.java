@@ -44,6 +44,7 @@ public class BookListService {
         BookList bookList = BookList.builder()
                 .name(request.name())
                 .user(user)
+                .isPrivate(request.isPrivate())
                 .build();
 
         BookList savedList = bookListRepository.save(bookList);
@@ -92,7 +93,7 @@ public class BookListService {
         List<BookSummaryResponse> books = list.getBooks().stream()
                 .map(this::toSummaryResponse)
                 .toList();
-        return new BookListResponse(list.getId(), list.getName(), books);
+        return new BookListResponse(list.getId(), list.getName(), books, list.isPrivate());
     }
 
     private BookSummaryResponse toSummaryResponse(Book book) {

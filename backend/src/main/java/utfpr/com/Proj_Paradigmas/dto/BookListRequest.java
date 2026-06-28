@@ -4,5 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 
 public record BookListRequest(
         @NotBlank(message = "O nome da lista é obrigatório")
-        String name
+        String name,
+        boolean isPrivate
 ) {}

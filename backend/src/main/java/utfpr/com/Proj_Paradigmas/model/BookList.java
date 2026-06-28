@@ -44,6 +44,10 @@ public class BookList {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isPrivate = false;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "book_list_books",
