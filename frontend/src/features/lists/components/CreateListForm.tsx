@@ -25,7 +25,7 @@ export function CreateListForm({ onCreated }: CreateListFormProps) {
     formState: { errors, isSubmitting },
   } = useForm<CreateListValues>({
     resolver: zodResolver(createListSchema),
-    defaultValues: { name: "" },
+    defaultValues: { name: "", isPrivate: false },
   });
 
   async function onSubmit(values: CreateListValues) {
@@ -33,7 +33,7 @@ export function CreateListForm({ onCreated }: CreateListFormProps) {
 
     try {
       const list = await create(values);
-      reset({ name: "" });
+      reset({ name: "", isPrivate: false });
       onCreated(list);
     } catch (error) {
       setFormError(
@@ -46,6 +46,17 @@ export function CreateListForm({ onCreated }: CreateListFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex items-start gap-2">
       <Field data-invalid={!!errors.name} className="flex-1">
         <Input placeholder="Nome da lista (ex: Quero ler)" {...register("name")} />
+        <div className="flex items-center space-x-2 py-2">
+          <input
+            type="checkbox"
+            id="isPrivate"
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            {...register("isPrivate")}
+          />
+          <label htmlFor="isPrivate" className="text-sm font-medium text-foreground/80 cursor-pointer">
+            Tornar esta lista privada
+          </label>
+        </div>
         <FieldError errors={errors.name ? [errors.name] : undefined} />
         {formError && <FieldError>{formError}</FieldError>}
       </Field>

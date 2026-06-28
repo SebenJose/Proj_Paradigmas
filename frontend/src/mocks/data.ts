@@ -64,6 +64,7 @@ export const lists: BookList[] = [
     books: [
       { id: 201, googleBooksId: seedBooks[2].googleBooksId, title: seedBooks[2].title, coverUrl: null },
     ],
+    isPrivate: false,
   },
 ];
 
