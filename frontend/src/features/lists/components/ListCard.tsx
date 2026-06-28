@@ -22,6 +22,8 @@ export function ListCard({ list, onChange }: ListCardProps) {
     try {
       const updated = await removeBook(list.id, bookId);
       onChange(updated);
+    } catch {
+      alert("Não foi possível remover o livro da lista. Tente novamente.");
     } finally {
       setRemovingId(null);
     }
@@ -31,8 +33,8 @@ export function ListCard({ list, onChange }: ListCardProps) {
     try {
       const updated = await updatePrivacy(list.id, !list.isPrivate);
       onChange(updated);
-    } catch (error) {
-      console.error("Erro ao alterar a privacidade da lista:", error);
+    } catch {
+      alert("Não foi possível alterar a privacidade da lista. Tente novamente.");
     }
   }
 
