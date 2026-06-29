@@ -70,13 +70,17 @@ public class BookService {
     }
 
     private Book toEntity(GoogleBookVolumeDto dto) {
+        if (dto.id() == null || dto.id().isBlank()) {
+            throw new IllegalArgumentException("Google Books ID cannot be null or blank");
+        }
         GoogleBookVolumeDto.VolumeInfo info = dto.volumeInfo();
         if (info == null) {
             throw new ResourceNotFoundException("Detalhes do volume estão ausentes no Google Books");
         }
+        String title = info.title() != null ? info.title() : "Título Desconhecido";
         return Book.builder()
                 .googleBooksId(dto.id())
-                .title(info.title())
+                .title(title)
                 .authors(info.authors() != null ? info.authors() : List.of())
                 .description(info.description())
                 .coverUrl(info.imageLinks() != null ? info.imageLinks().thumbnail() : null)

@@ -57,4 +57,45 @@ public class BookServiceTest {
         assertNotNull(savedBook);
         assertTrue(savedBook.getEmbeddable());
     }
+
+    @Test
+    public void testSearchFiltersNullVolumeInfo() {
+        // Arrange
+        String query = "some query";
+        GoogleBookVolumeDto validDto = new GoogleBookVolumeDto(
+                "valid-id",
+                new GoogleBookVolumeDto.VolumeInfo("Valid Title", List.of("Author"), "Desc", "2026", 100, null),
+                new GoogleBookVolumeDto.AccessInfo(true)
+        );
+        GoogleBookVolumeDto invalidDto = new GoogleBookVolumeDto(
+                "invalid-id",
+                null,
+                new GoogleBookVolumeDto.AccessInfo(true)
+        );
+
+        when(googleBooksClient.search(query)).thenReturn(List.of(validDto, invalidDto));
+
+        // Act
+        var results = bookService.search(query);
+
+        // Assert
+        assertNotNull(results);
+        assertEquals(1, results.size());
+        assertEquals("valid-id", results.get(0).googleBooksId());
+        assertEquals("Valid Title", results.get(0).title());
+    }
+
+    @Test
+    public void testFindOrCreateThrowsResourceNotFoundExceptionWhenVolumeInfoIsNull() {
+        // Arrange
+        String googleId = "null_volume_info_id";
+        GoogleBookVolumeDto mockDto = new GoogleBookVolumeDto(googleId, null, new GoogleBookVolumeDto.AccessInfo(true));
+
+        when(googleBooksClient.findById(googleId)).thenReturn(Optional.of(mockDto));
+
+        // Act & Assert
+        assertThrows(utfpr.com.Proj_Paradigmas.exception.ResourceNotFoundException.class, () -> {
+            bookService.findOrCreate(googleId);
+        });
+    }
 }
