@@ -9,7 +9,14 @@ public class RestClientConfig {
 
     @Bean
     public RestClient googleBooksRestClient() {
-        return RestClient.builder().baseUrl("https://www.googleapis.com/books/v1").build();
+        org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory = 
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(3000);
+        requestFactory.setReadTimeout(5000);
+        return RestClient.builder()
+                .requestFactory(requestFactory)
+                .baseUrl("https://www.googleapis.com/books/v1")
+                .build();
     }
 
     @Bean

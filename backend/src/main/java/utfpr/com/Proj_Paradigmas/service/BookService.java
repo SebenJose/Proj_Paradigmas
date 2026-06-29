@@ -19,7 +19,10 @@ public class BookService {
     private final GoogleBooksClient googleBooksClient;
 
     public List<BookSearchResultDto> search(String query) {
-        return googleBooksClient.search(query).stream().map(this::toSearchResult).toList();
+        return googleBooksClient.search(query).stream()
+                .filter(dto -> dto != null && dto.volumeInfo() != null)
+                .map(this::toSearchResult)
+                .toList();
     }
 
     @Transactional
@@ -68,6 +71,9 @@ public class BookService {
 
     private Book toEntity(GoogleBookVolumeDto dto) {
         GoogleBookVolumeDto.VolumeInfo info = dto.volumeInfo();
+        if (info == null) {
+            throw new ResourceNotFoundException("Detalhes do volume estão ausentes no Google Books");
+        }
         return Book.builder()
                 .googleBooksId(dto.id())
                 .title(info.title())
