@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { search } from "../services/book.service";
 import { BookSearchForm } from "./BookSearchForm";
 import { BookCard } from "./BookCard";
@@ -28,6 +28,10 @@ export function BookSearchView() {
       setHasSearched(true);
     }
   }
+
+  useEffect(() => {
+    handleSearch("best sellers");
+  }, []);
 
   return (
     <div className="flex w-full max-w-3xl flex-col gap-6">
