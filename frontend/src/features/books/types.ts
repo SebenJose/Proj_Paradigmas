@@ -14,4 +14,6 @@ export interface BookDetail {
   coverUrl: string | null;
   publishedDate: string | null;
   pageCount: number | null;
+  embeddable?: boolean;
 }
+

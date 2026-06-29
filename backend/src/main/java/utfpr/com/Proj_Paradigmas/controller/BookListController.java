@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import utfpr.com.Proj_Paradigmas.dto.AddBookToListRequest;
 import utfpr.com.Proj_Paradigmas.dto.BookListRequest;
 import utfpr.com.Proj_Paradigmas.dto.BookListResponse;
+import utfpr.com.Proj_Paradigmas.dto.UpdateListPrivacyRequest;
 import utfpr.com.Proj_Paradigmas.service.BookListService;
 
 @RestController
@@ -52,5 +54,13 @@ public class BookListController {
             @PathVariable("bookId") Long bookId,
             Authentication authentication) {
         return ResponseEntity.ok(bookListService.removeBookFromList(authentication.getName(), listId, bookId));
+    }
+
+    @PatchMapping("/{id}/privacy")
+    public ResponseEntity<BookListResponse> updatePrivacy(
+            @PathVariable("id") Long listId,
+            @Valid @RequestBody UpdateListPrivacyRequest request,
+            Authentication authentication) {
+        return ResponseEntity.ok(bookListService.updatePrivacy(authentication.getName(), listId, request.isPrivate()));
     }
 }

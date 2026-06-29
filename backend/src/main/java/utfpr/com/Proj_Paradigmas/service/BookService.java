@@ -19,16 +19,25 @@ public class BookService {
     private final GoogleBooksClient googleBooksClient;
 
     public List<BookSearchResultDto> search(String query) {
-        return googleBooksClient.search(query).stream().map(this::toSearchResult).toList();
+        return googleBooksClient.search(query).stream()
+                .filter(dto -> dto != null && dto.volumeInfo() != null)
+                .map(this::toSearchResult)
+                .toList();
     }
 
     @Transactional
     public BookDetailResponse getDetail(String googleBooksId) {
+        if (googleBooksId == null || googleBooksId.isBlank()) {
+            throw new IllegalArgumentException("Google Books ID cannot be null or blank");
+        }
         return toDetailResponse(findOrCreate(googleBooksId));
     }
 
     @Transactional
     public Book findOrCreate(String googleBooksId) {
+        if (googleBooksId == null || googleBooksId.isBlank()) {
+            throw new IllegalArgumentException("Google Books ID cannot be null or blank");
+        }
         return bookRepository
                 .findByGoogleBooksId(googleBooksId)
                 .orElseGet(
@@ -62,19 +71,28 @@ public class BookService {
                 book.getDescription(),
                 book.getCoverUrl(),
                 book.getPublishedDate(),
-                book.getPageCount());
+                book.getPageCount(),
+                book.getEmbeddable());
     }
 
     private Book toEntity(GoogleBookVolumeDto dto) {
+        if (dto.id() == null || dto.id().isBlank()) {
+            throw new IllegalArgumentException("Google Books ID cannot be null or blank");
+        }
         GoogleBookVolumeDto.VolumeInfo info = dto.volumeInfo();
+        if (info == null) {
+            throw new ResourceNotFoundException("Detalhes do volume estão ausentes no Google Books");
+        }
+        String title = (info.title() != null && !info.title().isBlank()) ? info.title() : "Título Desconhecido";
         return Book.builder()
                 .googleBooksId(dto.id())
-                .title(info.title())
+                .title(title)
                 .authors(info.authors() != null ? info.authors() : List.of())
                 .description(info.description())
                 .coverUrl(info.imageLinks() != null ? info.imageLinks().thumbnail() : null)
                 .publishedDate(info.publishedDate())
                 .pageCount(info.pageCount())
+                .embeddable(dto.accessInfo() != null && Boolean.TRUE.equals(dto.accessInfo().embeddable()))
                 .build();
     }
 }

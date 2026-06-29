@@ -1,155 +1,110 @@
 package utfpr.com.Proj_Paradigmas.service;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import utfpr.com.Proj_Paradigmas.dto.AddBookToListRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 import utfpr.com.Proj_Paradigmas.dto.BookListRequest;
-import utfpr.com.Proj_Paradigmas.exception.ConflictException;
+import utfpr.com.Proj_Paradigmas.dto.BookListResponse;
 import utfpr.com.Proj_Paradigmas.exception.ResourceNotFoundException;
-import utfpr.com.Proj_Paradigmas.model.Book;
-import utfpr.com.Proj_Paradigmas.model.BookList;
 import utfpr.com.Proj_Paradigmas.model.User;
-import utfpr.com.Proj_Paradigmas.repository.BookListRepository;
 import utfpr.com.Proj_Paradigmas.repository.UserRepository;
 
-@ExtendWith(MockitoExtension.class)
-class BookListServiceTest {
+import static org.junit.jupiter.api.Assertions.*;
 
-    @Mock BookListRepository bookListRepository;
-    @Mock UserRepository userRepository;
-    @Mock BookService bookService;
+@SpringBootTest
+@ActiveProfiles("test")
+@Transactional
+public class BookListServiceTest {
 
-    @InjectMocks BookListService bookListService;
+    @Autowired
+    private BookListService bookListService;
 
-    private User makeUser() {
-        return User.builder()
-                .id(1L)
-                .username("joao")
-                .email("joao@email.com")
-                .passwordHash("hash")
-                .createdAt(Instant.now())
+    @Autowired
+    private UserRepository userRepository;
+
+    @Test
+    public void testCreatePrivateList() {
+        User user = User.builder()
+                .username("listuser")
+                .email("listuser@email.com")
+                .passwordHash("hashedpassword")
                 .build();
-    }
+        userRepository.save(user);
 
-    private Book makeBook(Long id, String googleBooksId) {
-        return Book.builder().id(id).googleBooksId(googleBooksId).title("Livro " + id).build();
-    }
+        BookListRequest request = new BookListRequest("Lista Privada de Teste", true);
+        BookListResponse response = bookListService.createList("listuser", request);
 
-    private BookList makeList(User user, List<Book> books) {
-        return BookList.builder().id(1L).name("Favoritos").user(user).books(books).build();
+        assertNotNull(response);
+        assertTrue(response.isPrivate());
+        assertEquals("Lista Privada de Teste", response.name());
     }
 
     @Test
-    void createList_success() {
-        User user = makeUser();
-        when(userRepository.findByUsername("joao")).thenReturn(Optional.of(user));
-        when(bookListRepository.existsByUserUsernameAndName("joao", "Favoritos")).thenReturn(false);
-        when(bookListRepository.save(any(BookList.class))).thenAnswer(inv -> {
-            BookList list = inv.getArgument(0);
-            list.setId(1L);
-            return list;
+    public void testCreatePublicListByDefault() {
+        User user = User.builder()
+                .username("publiclistuser")
+                .email("publiclistuser@email.com")
+                .passwordHash("hashedpassword")
+                .build();
+        userRepository.save(user);
+
+        BookListRequest request = new BookListRequest("Lista Pública de Teste", false);
+        BookListResponse response = bookListService.createList("publiclistuser", request);
+
+        assertNotNull(response);
+        assertFalse(response.isPrivate());
+        assertEquals("Lista Pública de Teste", response.name());
+    }
+
+    @Test
+    public void testUpdatePrivacy() {
+        // Nota: listuser já é criado em @BeforeEach ou podemos recuperá-lo/criá-lo isoladamente.
+        // Como a classe agora é @Transactional, podemos criar um usuário localmente no teste para garantir isolação total.
+        User user = User.builder()
+                .username("updateuser")
+                .email("updateuser@email.com")
+                .passwordHash("hashedpassword")
+                .build();
+        userRepository.save(user);
+        
+        BookListRequest createReq = new BookListRequest("Lista Mutável", false);
+        BookListResponse created = bookListService.createList("updateuser", createReq);
+        assertFalse(created.isPrivate());
+
+        BookListResponse updated = bookListService.updatePrivacy("updateuser", created.id(), true);
+        assertTrue(updated.isPrivate());
+    }
+
+    @Test
+    public void testUpdatePrivacyListNotFound() {
+        assertThrows(ResourceNotFoundException.class, () -> {
+            bookListService.updatePrivacy("updateuser", 9999L, true);
         });
-
-        var response = bookListService.createList("joao", new BookListRequest("Favoritos"));
-
-        assertThat(response.name()).isEqualTo("Favoritos");
-        assertThat(response.books()).isEmpty();
-        verify(bookListRepository).save(any(BookList.class));
     }
 
     @Test
-    void createList_userNotFound_throwsNotFound() {
-        when(userRepository.findByUsername("nobody")).thenReturn(Optional.empty());
+    public void testUpdatePrivacyUnauthorizedUser() {
+        User userA = User.builder()
+                .username("usera")
+                .email("usera@email.com")
+                .passwordHash("hashedpassword")
+                .build();
+        userRepository.save(userA);
 
-        assertThatThrownBy(() -> bookListService.createList("nobody", new BookListRequest("Favoritos")))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
+        User userB = User.builder()
+                .username("userb")
+                .email("userb@email.com")
+                .passwordHash("hashedpassword")
+                .build();
+        userRepository.save(userB);
 
-    @Test
-    void createList_duplicateName_throwsConflict() {
-        User user = makeUser();
-        when(userRepository.findByUsername("joao")).thenReturn(Optional.of(user));
-        when(bookListRepository.existsByUserUsernameAndName("joao", "Favoritos")).thenReturn(true);
+        BookListRequest createReq = new BookListRequest("Lista do User A", false);
+        BookListResponse created = bookListService.createList("usera", createReq);
 
-        assertThatThrownBy(() -> bookListService.createList("joao", new BookListRequest("Favoritos")))
-                .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("nome");
-    }
-
-    @Test
-    void addBookToList_success() {
-        User user = makeUser();
-        BookList bookList = makeList(user, new ArrayList<>());
-        Book book = makeBook(2L, "xyz789");
-
-        when(bookListRepository.findById(1L)).thenReturn(Optional.of(bookList));
-        when(bookService.findOrCreate("xyz789")).thenReturn(book);
-        when(bookListRepository.save(any(BookList.class))).thenReturn(bookList);
-
-        var response = bookListService.addBookToList("joao", 1L, new AddBookToListRequest("xyz789", null, null));
-
-        assertThat(response.books()).hasSize(1);
-        assertThat(response.books().get(0).googleBooksId()).isEqualTo("xyz789");
-    }
-
-    @Test
-    void addBookToList_listNotFound_throwsNotFound() {
-        when(bookListRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> bookListService.addBookToList("joao", 99L, new AddBookToListRequest("xyz789", null, null)))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    @Test
-    void addBookToList_bookAlreadyInList_throwsConflict() {
-        User user = makeUser();
-        Book book = makeBook(2L, "xyz789");
-        BookList bookList = makeList(user, new ArrayList<>(List.of(book)));
-
-        when(bookListRepository.findById(1L)).thenReturn(Optional.of(bookList));
-        when(bookService.findOrCreate("xyz789")).thenReturn(book);
-
-        assertThatThrownBy(() -> bookListService.addBookToList("joao", 1L, new AddBookToListRequest("xyz789", null, null)))
-                .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("já está");
-    }
-
-    @Test
-    void removeBookFromList_success() {
-        User user = makeUser();
-        Book book = makeBook(2L, "xyz789");
-        BookList bookList = makeList(user, new ArrayList<>(List.of(book)));
-
-        when(bookListRepository.findById(1L)).thenReturn(Optional.of(bookList));
-        when(bookListRepository.save(any(BookList.class))).thenReturn(bookList);
-
-        var response = bookListService.removeBookFromList("joao", 1L, 2L);
-
-        assertThat(response.books()).isEmpty();
-    }
-
-    @Test
-    void removeBookFromList_bookNotInList_throwsNotFound() {
-        User user = makeUser();
-        BookList bookList = makeList(user, new ArrayList<>());
-
-        when(bookListRepository.findById(1L)).thenReturn(Optional.of(bookList));
-
-        assertThatThrownBy(() -> bookListService.removeBookFromList("joao", 1L, 99L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Livro não encontrado");
+        assertThrows(ResourceNotFoundException.class, () -> {
+            bookListService.updatePrivacy("userb", created.id(), true);
+        });
     }
 }

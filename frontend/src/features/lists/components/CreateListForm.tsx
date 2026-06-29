@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { create } from "../services/list.service";
-import { createListSchema, type CreateListValues } from "../schemas";
+import { createListSchema, type CreateListValues, type CreateListInput } from "../schemas";
 import { ApiError } from "@/shared/lib/api-client";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -23,9 +23,9 @@ export function CreateListForm({ onCreated }: CreateListFormProps) {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CreateListValues>({
+  } = useForm<CreateListInput, unknown, CreateListValues>({
     resolver: zodResolver(createListSchema),
-    defaultValues: { name: "" },
+    defaultValues: { name: "", isPrivate: false },
   });
 
   async function onSubmit(values: CreateListValues) {
@@ -33,7 +33,7 @@ export function CreateListForm({ onCreated }: CreateListFormProps) {
 
     try {
       const list = await create(values);
-      reset({ name: "" });
+      reset({ name: "", isPrivate: false });
       onCreated(list);
     } catch (error) {
       setFormError(
@@ -43,16 +43,30 @@ export function CreateListForm({ onCreated }: CreateListFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex items-start gap-2">
-      <Field data-invalid={!!errors.name} className="flex-1">
-        <Input placeholder="Nome da lista (ex: Quero ler)" {...register("name")} />
-        <FieldError errors={errors.name ? [errors.name] : undefined} />
-        {formError && <FieldError>{formError}</FieldError>}
-      </Field>
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-2">
+      <div className="flex items-start gap-2 w-full">
+        <Field data-invalid={!!errors.name} className="flex-1">
+          <Input placeholder="Nome da lista (ex: Quero ler)" {...register("name")} />
+          <FieldError errors={errors.name ? [errors.name] : undefined} />
+          {formError && <FieldError>{formError}</FieldError>}
+        </Field>
 
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Criando..." : "Nova lista"}
-      </Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Criando..." : "Nova lista"}
+        </Button>
+      </div>
+
+      <div className="flex items-center space-x-2 py-1">
+        <input
+          type="checkbox"
+          id="isPrivate"
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          {...register("isPrivate")}
+        />
+        <label htmlFor="isPrivate" className="text-sm font-medium text-foreground/80 cursor-pointer">
+          Tornar esta lista privada
+        </label>
+      </div>
     </form>
   );
 }

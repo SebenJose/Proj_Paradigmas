@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StarRating } from "@/shared/components/StarRating";
 import type { BookReviews } from "../types";
 
@@ -22,7 +23,9 @@ export function ReviewList({ data }: { data: BookReviews }) {
         {data.reviews.map((review) => (
           <li key={review.id} className="rounded-lg border p-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium">{review.username}</span>
+              <Link href={`/profile/${encodeURIComponent(review.username)}`} className="text-sm font-medium text-primary hover:underline transition-colors">
+                {review.username}
+              </Link>
               <StarRating rating={review.rating} />
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{review.comment}</p>

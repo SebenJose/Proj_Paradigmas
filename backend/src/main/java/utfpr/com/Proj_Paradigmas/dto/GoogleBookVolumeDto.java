@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record GoogleBookVolumeDto(String id, VolumeInfo volumeInfo) {
+public record GoogleBookVolumeDto(String id, VolumeInfo volumeInfo, AccessInfo accessInfo) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record VolumeInfo(
@@ -17,4 +17,7 @@ public record GoogleBookVolumeDto(String id, VolumeInfo volumeInfo) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ImageLinks(String thumbnail) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record AccessInfo(Boolean embeddable) {}
 }

@@ -32,6 +32,14 @@ public class BookListService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<BookListResponse> getUserPublicLists(String username) {
+        return bookListRepository.findByUserUsernameAndIsPrivateFalse(username)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional
     public BookListResponse createList(String username, BookListRequest request) {
         User user = userRepository.findByUsername(username)
@@ -44,6 +52,7 @@ public class BookListService {
         BookList bookList = BookList.builder()
                 .name(request.name())
                 .user(user)
+                .isPrivate(request.isPrivate())
                 .build();
 
         BookList savedList = bookListRepository.save(bookList);
@@ -88,11 +97,24 @@ public class BookListService {
         return toResponse(savedList);
     }
 
+    @Transactional
+    public BookListResponse updatePrivacy(String username, Long listId, boolean isPrivate) {
+        BookList bookList = bookListRepository.findById(listId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lista não encontrada"));
+
+        if (!bookList.getUser().getUsername().equals(username)) {
+            throw new ResourceNotFoundException("Lista não encontrada");
+        }
+
+        bookList.setPrivate(isPrivate);
+        return toResponse(bookList);
+    }
+
     private BookListResponse toResponse(BookList list) {
         List<BookSummaryResponse> books = list.getBooks().stream()
                 .map(this::toSummaryResponse)
                 .toList();
-        return new BookListResponse(list.getId(), list.getName(), books);
+        return new BookListResponse(list.getId(), list.getName(), books, list.isPrivate());
     }
 
     private BookSummaryResponse toSummaryResponse(Book book) {

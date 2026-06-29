@@ -16,15 +16,20 @@ import utfpr.com.Proj_Paradigmas.repository.ReviewRepository;
 public class DashboardService {
 
     private final ReviewRepository reviewRepository;
+    private final NytService nytService;
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboardData() {
-        PageRequest limitFive = PageRequest.of(0, 5);
+        PageRequest limitBooks = PageRequest.of(0, 20);
+        PageRequest limitReviews = PageRequest.of(0, 15);
 
-        List<BookRatingSummary> topRated = reviewRepository.findTopRatedBooks(limitFive);
-        List<BookRatingSummary> mostReviewed = reviewRepository.findMostReviewedBooks(limitFive);
+        List<BookRatingSummary> topRated = nytService.getAcclaimedBooks();
+        if (topRated == null || topRated.isEmpty()) {
+            topRated = reviewRepository.findTopRatedBooks(limitBooks);
+        }
+        List<BookRatingSummary> mostReviewed = reviewRepository.findMostReviewedBooks(limitBooks);
 
-        List<ReviewResponse> recentReviews = reviewRepository.findRecentReviews(limitFive)
+        List<ReviewResponse> recentReviews = reviewRepository.findRecentReviews(limitReviews)
                 .stream()
                 .map(this::toReviewResponse)
                 .toList();
@@ -37,6 +42,7 @@ public class DashboardService {
                 review.getId(),
                 review.getUser().getUsername(),
                 review.getBook().getGoogleBooksId(),
+                review.getBook().getTitle(),
                 review.getRating(),
                 review.getComment(),
                 review.getCreatedAt()

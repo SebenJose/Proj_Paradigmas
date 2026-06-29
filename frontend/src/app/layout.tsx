@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { MockProvider } from "@/mocks/MockProvider";
 import { NavBar } from "@/shared/components/NavBar";
+import { ThemeProvider } from "@/shared/providers/ThemeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,12 +27,32 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const saved = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (saved === 'dark' || (!saved && prefersDark)) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (_) {}
+            `
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
-        <NavBar />
-        <MockProvider>{children}</MockProvider>
+        <ThemeProvider>
+          <NavBar />
+          <MockProvider>{children}</MockProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

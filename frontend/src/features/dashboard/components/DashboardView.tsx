@@ -1,42 +1,201 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { Clock, MessageSquare, Star, TrendingUp } from "lucide-react";
+import { MessageSquare, Star, TrendingUp, LayoutDashboard } from "lucide-react";
 import { getDashboard } from "../services/dashboard.service";
 import { StarRating } from "@/shared/components/StarRating";
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
-import type { BookRatingSummary, Dashboard } from "../types";
+import { BookCard } from "@/features/books/components/BookCard";
+import type { Dashboard } from "../types";
 
-function BookRatingRow({ book, index }: { book: BookRatingSummary; index?: number }) {
+type TabId = "overview" | "popular" | "acclaimed" | "recent";
+
+interface Tab {
+  id: TabId;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const TABS: Tab[] = [
+  { id: "overview",  label: "Visão Geral",          icon: <LayoutDashboard className="h-4 w-4" /> },
+  { id: "popular",   label: "Os Mais Populares",     icon: <TrendingUp       className="h-4 w-4" /> },
+  { id: "acclaimed", label: "Aclamação da Crítica",  icon: <Star             className="h-4 w-4" /> },
+  { id: "recent",    label: "Atividade Recente",     icon: <MessageSquare    className="h-4 w-4" /> },
+];
+
+// ── Skeleton ───────────────────────────────────────────────────────────────────
+function DashboardSkeleton() {
   return (
-    <li className="group relative flex items-center justify-between gap-3 rounded-lg border border-transparent p-2 transition-all hover:border-border/50 hover:bg-muted/30">
-      <div className="flex items-center gap-3 overflow-hidden">
-        {index !== undefined && (
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-            {index + 1}
-          </span>
-        )}
-        <Link
-          href={`/books/${encodeURIComponent(book.googleBooksId)}`}
-          className="truncate text-sm font-medium transition-colors hover:text-primary"
-        >
-          {book.title}
-        </Link>
+    <div className="w-full max-w-7xl mx-auto px-4 py-8 space-y-10 animate-pulse">
+      <div className="flex gap-2 border-b border-border/20 pb-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-9 w-36 rounded-full bg-muted/60" />
+        ))}
       </div>
-      <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-background px-2 py-1 shadow-sm border border-border/50">
-        <StarRating rating={book.averageRating} />
-        <span className="text-[10px] font-medium text-muted-foreground ml-1">
-          ({book.reviewCount})
-        </span>
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div key={i} className="aspect-[2/3] w-full bg-muted/60 rounded-md" />
+        ))}
       </div>
-    </li>
+    </div>
   );
 }
 
+// ── Book card with hover stats ─────────────────────────────────────────────────
+function BookEntry({
+  book,
+}: {
+  book: Dashboard["topRated"][number];
+}) {
+  return (
+    <div className="flex flex-col gap-1 group">
+      <BookCard
+        book={{
+          googleBooksId: book.googleBooksId,
+          title: book.title,
+          coverUrl: book.coverUrl,
+          authors: [],
+          publishedDate: null,
+        }}
+      />
+      <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <span className="font-mono">{book.averageRating.toFixed(1)} ★</span>
+        <span>{book.reviewCount} resenhas</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Section header ─────────────────────────────────────────────────────────────
+function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="flex items-center gap-2 border-b border-border/20 pb-2">
+      {icon}
+      <h2 className="text-xl font-serif font-semibold text-foreground/80">{title}</h2>
+    </div>
+  );
+}
+
+// ── Book grid — catalog mode (all books, larger grid) ─────────────────────────
+function CatalogGrid({
+  books,
+  emptyMessage,
+}: {
+  books: Dashboard["topRated"];
+  emptyMessage: string;
+}) {
+  if (books.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground italic py-12 text-center">{emptyMessage}</p>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      {books.map((book) => (
+        <BookEntry key={book.googleBooksId} book={book} />
+      ))}
+    </div>
+  );
+}
+
+// ── Book grid — overview mode (limited, compact) ───────────────────────────────
+function OverviewGrid({
+  books,
+  emptyMessage,
+  limit = 4,
+}: {
+  books: Dashboard["topRated"];
+  emptyMessage: string;
+  limit?: number;
+}) {
+  const slice = books.slice(0, limit);
+  if (slice.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground italic py-4 text-center">{emptyMessage}</p>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {slice.map((book) => (
+        <BookEntry key={book.googleBooksId} book={book} />
+      ))}
+    </div>
+  );
+}
+
+// ── Recent activity feed ───────────────────────────────────────────────────────
+function RecentActivityFeed({
+  reviews,
+  compact = false,
+}: {
+  reviews: Dashboard["recentReviews"];
+  compact?: boolean;
+}) {
+  const list = compact ? reviews.slice(0, 5) : reviews;
+
+  if (list.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground italic py-6 text-center">
+        Nenhuma atividade recente.
+      </p>
+    );
+  }
+
+  return (
+    <ul className={compact ? "space-y-3" : "space-y-4 max-w-2xl mx-auto"}>
+      {list.map((review) => (
+        <li
+          key={review.id}
+          className="backdrop-blur-glass p-4 rounded-lg shadow flex flex-col gap-2 transition-transform duration-200 hover:scale-[1.02] hover:shadow-md"
+        >
+          <div className="flex items-center justify-between">
+            <Link
+              href={`/profile/${encodeURIComponent(review.username)}`}
+              className="text-xs font-semibold text-primary hover:underline hover:text-primary-hover transition-colors"
+            >
+              {review.username}
+            </Link>
+            <StarRating rating={review.rating} className="scale-75 origin-right" />
+          </div>
+          <p className="text-xs text-muted-foreground italic border-l border-primary/20 pl-2 py-0.5">
+            {'"'}{review.comment || "Sem comentário."}{'"'}
+          </p>
+          <Link
+            href={`/books/${encodeURIComponent(review.googleBooksId)}`}
+            className="text-[10px] text-right text-muted-foreground hover:text-primary transition-colors"
+          >
+            Ver livro &rarr;
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// ── Fade wrapper ───────────────────────────────────────────────────────────────
+function FadeIn({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.opacity = "0";
+    el.style.transform = "translateY(8px)";
+    requestAnimationFrame(() => {
+      el.style.transition = "opacity 280ms ease, transform 280ms ease";
+      el.style.opacity = "1";
+      el.style.transform = "translateY(0)";
+    });
+  }, []);
+
+  return <div ref={ref}>{children}</div>;
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 export function DashboardView() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
 
   useEffect(() => {
     getDashboard()
@@ -44,97 +203,143 @@ export function DashboardView() {
       .catch(() => setError("Não foi possível carregar o dashboard"));
   }, []);
 
-  if (error) return (
-    <div className="flex h-40 w-full items-center justify-center rounded-xl bg-destructive/10 border border-destructive/20 text-destructive">
-      <p className="font-medium">{error}</p>
-    </div>
-  );
-  if (!dashboard) return (
-    <div className="flex h-64 w-full items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-    </div>
-  );
+  if (error) {
+    return (
+      <div className="flex h-40 w-full items-center justify-center rounded-xl bg-destructive/10 border border-destructive/20 text-destructive">
+        <p className="font-medium">{error}</p>
+      </div>
+    );
+  }
+
+  if (!dashboard) return <DashboardSkeleton />;
 
   return (
-    <div className="grid w-full max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
-      <Card className="border-border/40 bg-card/60 backdrop-blur-sm shadow-lg transition-all hover:shadow-xl">
-        <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4 border-b border-border/40">
-          <div className="rounded-lg bg-amber-500/10 p-2 text-amber-500">
-            <Star className="h-5 w-5" />
-          </div>
-          <CardTitle className="text-xl font-serif">Aclamação da Crítica</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          {dashboard.topRated.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground/70">
-              <Star className="h-8 w-8 mb-2 opacity-20" />
-              <p className="text-sm">Sem avaliações ainda.</p>
-            </div>
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {dashboard.topRated.map((book, i) => (
-                <BookRatingRow key={book.googleBooksId} book={book} index={i} />
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+    <div className="w-full max-w-7xl mx-auto px-4 py-8 space-y-8">
+      {/* ── Tab Navigation ───────────────────────────────────────────────── */}
+      <nav
+        className="flex flex-wrap gap-1 border-b border-border/20"
+        role="tablist"
+        aria-label="Seções do dashboard"
+      >
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`panel-${tab.id}`}
+              id={`tab-${tab.id}`}
+              onClick={() => setActiveTab(tab.id)}
+              className={[
+                "relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg",
+                "transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                "before:absolute before:bottom-[-1px] before:left-0 before:right-0 before:h-[2px]",
+                "before:transition-all before:duration-200",
+                isActive
+                  ? "text-primary before:bg-primary bg-primary/5"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40 before:bg-transparent",
+              ].join(" ")}
+            >
+              <span className={`transition-colors duration-200 ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                {tab.icon}
+              </span>
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
-      <Card className="border-border/40 bg-card/60 backdrop-blur-sm shadow-lg transition-all hover:shadow-xl">
-        <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4 border-b border-border/40">
-          <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-500">
-            <TrendingUp className="h-5 w-5" />
-          </div>
-          <CardTitle className="text-xl font-serif">Os Mais Populares</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          {dashboard.mostReviewed.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground/70">
-              <TrendingUp className="h-8 w-8 mb-2 opacity-20" />
-              <p className="text-sm">Sem avaliações ainda.</p>
-            </div>
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {dashboard.mostReviewed.map((book, i) => (
-                <BookRatingRow key={book.googleBooksId} book={book} index={i} />
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      {/* ── Tab Panels ───────────────────────────────────────────────────── */}
 
-      <Card className="md:col-span-2 border-border/40 bg-card/60 backdrop-blur-sm shadow-lg">
-        <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4 border-b border-border/40">
-          <div className="rounded-lg bg-blue-500/10 p-2 text-blue-500">
-            <Clock className="h-5 w-5" />
-          </div>
-          <CardTitle className="text-xl font-serif">Atividade Recente</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-4">
-          {dashboard.recentReviews.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground/70">
-              <MessageSquare className="h-10 w-10 mb-3 opacity-20" />
-              <p className="text-sm">O clube do livro está quieto no momento.</p>
+      {/* Visão Geral — compact overview */}
+      {activeTab === "overview" && (
+        <FadeIn key="overview">
+          <div
+            id="panel-overview"
+            role="tabpanel"
+            aria-labelledby="tab-overview"
+            className="grid grid-cols-1 lg:grid-cols-4 gap-10"
+          >
+            <div className="lg:col-span-3 space-y-10">
+              <section className="space-y-4">
+                <SectionHeader
+                  icon={<TrendingUp className="h-5 w-5 text-red-500" />}
+                  title="Os Mais Populares"
+                />
+                <OverviewGrid
+                  books={dashboard.mostReviewed}
+                  emptyMessage="Nenhum livro popular no momento."
+                />
+              </section>
+
+              <section className="space-y-4">
+                <SectionHeader
+                  icon={<Star className="h-5 w-5 text-yellow-500" />}
+                  title="Aclamação da Crítica"
+                />
+                <OverviewGrid
+                  books={dashboard.topRated}
+                  emptyMessage="Nenhuma recomendação no momento."
+                />
+              </section>
             </div>
-          ) : (
-            <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {dashboard.recentReviews.map((review) => (
-                <li key={review.id} className="flex flex-col gap-2 rounded-xl border border-border/50 bg-muted/20 p-4 transition-colors hover:bg-muted/40">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold flex items-center gap-1.5 text-primary">
-                      {review.username}
-                    </span>
-                    <StarRating rating={review.rating} />
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed italic border-l-2 border-primary/20 pl-3 py-1">
-                    "{review.comment}"
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+
+            <div className="lg:col-span-1 space-y-4">
+              <SectionHeader
+                icon={<MessageSquare className="h-5 w-5 text-blue-500" />}
+                title="Atividade Recente"
+              />
+              <RecentActivityFeed reviews={dashboard.recentReviews} compact />
+            </div>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Os Mais Populares — full catalog */}
+      {activeTab === "popular" && (
+        <FadeIn key="popular">
+          <div id="panel-popular" role="tabpanel" aria-labelledby="tab-popular" className="space-y-6">
+            <SectionHeader
+              icon={<TrendingUp className="h-5 w-5 text-red-500" />}
+              title={`Os Mais Populares (${dashboard.mostReviewed.length})`}
+            />
+            <CatalogGrid
+              books={dashboard.mostReviewed}
+              emptyMessage="Nenhum livro popular no momento."
+            />
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Aclamação da Crítica — full catalog */}
+      {activeTab === "acclaimed" && (
+        <FadeIn key="acclaimed">
+          <div id="panel-acclaimed" role="tabpanel" aria-labelledby="tab-acclaimed" className="space-y-6">
+            <SectionHeader
+              icon={<Star className="h-5 w-5 text-yellow-500" />}
+              title={`Aclamação da Crítica (${dashboard.topRated.length})`}
+            />
+            <CatalogGrid
+              books={dashboard.topRated}
+              emptyMessage="Nenhuma recomendação no momento."
+            />
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Atividade Recente — full feed */}
+      {activeTab === "recent" && (
+        <FadeIn key="recent">
+          <div id="panel-recent" role="tabpanel" aria-labelledby="tab-recent" className="space-y-6">
+            <SectionHeader
+              icon={<MessageSquare className="h-5 w-5 text-blue-500" />}
+              title={`Atividade Recente (${dashboard.recentReviews.length})`}
+            />
+            <RecentActivityFeed reviews={dashboard.recentReviews} />
+          </div>
+        </FadeIn>
+      )}
     </div>
   );
 }

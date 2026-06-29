@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { BookOpen, FolderOpen, Trash2 } from "lucide-react";
-import { removeBook } from "../services/list.service";
+import { BookOpen, FolderOpen, Trash2, Lock, Eye } from "lucide-react";
+import { removeBook, updatePrivacy } from "../services/list.service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card";
 import { Button } from "@/shared/components/ui/button";
 import type { BookList } from "../types";
@@ -22,17 +22,44 @@ export function ListCard({ list, onChange }: ListCardProps) {
     try {
       const updated = await removeBook(list.id, bookId);
       onChange(updated);
+    } catch {
+      alert("Não foi possível remover o livro da lista. Tente novamente.");
     } finally {
       setRemovingId(null);
+    }
+  }
+
+  async function handleTogglePrivacy() {
+    try {
+      const updated = await updatePrivacy(list.id, !list.isPrivate);
+      onChange(updated);
+    } catch {
+      alert("Não foi possível alterar a privacidade da lista. Tente novamente.");
     }
   }
 
   return (
     <Card className="h-full border-border/40 bg-card/60 backdrop-blur-sm shadow-md transition-all hover:shadow-lg flex flex-col">
       <CardHeader className="border-b border-border/40 bg-muted/20 pb-4">
-        <div className="flex items-center gap-2">
-          <FolderOpen className="h-5 w-5 text-primary" />
-          <CardTitle className="text-xl font-serif">{list.name}</CardTitle>
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <FolderOpen className="h-5 w-5 text-primary" />
+            <CardTitle className="text-xl font-serif">{list.name}</CardTitle>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-muted"
+            onClick={handleTogglePrivacy}
+            title={list.isPrivate ? "Tornar Pública (Visível para outros)" : "Tornar Privada (Apenas você vê)"}
+          >
+            {list.isPrivate ? (
+              <Lock className="h-4 w-4 text-amber-600" />
+            ) : (
+              <Eye className="h-4 w-4 text-muted-foreground/50" />
+            )}
+          </Button>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           {list.books.length} {list.books.length === 1 ? 'livro' : 'livros'}

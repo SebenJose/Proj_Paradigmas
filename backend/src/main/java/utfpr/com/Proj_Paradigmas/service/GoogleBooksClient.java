@@ -24,7 +24,10 @@ public class GoogleBooksClient {
                 googleBooksRestClient
                         .get()
                         .uri(uriBuilder -> {
-                            var builder = uriBuilder.path("/volumes").queryParam("q", query);
+                            var builder = uriBuilder
+                                    .path("/volumes")
+                                    .queryParam("q", query)
+                                    .queryParam("maxResults", 40);
                             if (apiKey != null && !apiKey.isBlank()) {
                                 builder.queryParam("key", apiKey);
                             }

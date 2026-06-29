@@ -1,11 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { logout } from "@/features/auth";
 import { Button } from "@/shared/components/ui/button";
-import { BookOpen, LayoutDashboard, Library, LogOut, UserCircle2 } from "lucide-react";
+import { useTheme } from "@/shared/providers/ThemeProvider";
+import { BookOpen, LayoutDashboard, Library, LogOut, UserCircle2, Sun, Moon } from "lucide-react";
 
 const authLinks = [
   { href: "/books", label: "Explorar", icon: BookOpen },
@@ -17,6 +19,11 @@ export function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   function handleLogout() {
     logout();
@@ -61,6 +68,24 @@ export function NavBar() {
         </div>
 
         <div className="flex items-center gap-4">
+          {mounted ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleTheme}
+              className="rounded-full w-9 h-9 p-0 text-muted-foreground hover:text-foreground active-press"
+              aria-label="Alternar tema"
+            >
+              {theme === "dark" ? (
+                <Sun className="h-4 w-4 transition-all" />
+              ) : (
+                <Moon className="h-4 w-4 transition-all" />
+              )}
+            </Button>
+          ) : (
+            <div className="w-9 h-9" />
+          )}
+
           {isAuthenticated ? (
             <Button 
               variant="ghost" 
@@ -84,3 +109,4 @@ export function NavBar() {
     </nav>
   );
 }
+

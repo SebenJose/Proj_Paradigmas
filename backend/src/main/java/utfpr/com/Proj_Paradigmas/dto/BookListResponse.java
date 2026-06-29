@@ -5,5 +5,6 @@ import java.util.List;
 public record BookListResponse(
         Long id,
         String name,
-        List<BookSummaryResponse> books
+        List<BookSummaryResponse> books,
+        boolean isPrivate
 ) {}

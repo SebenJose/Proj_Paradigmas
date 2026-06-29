@@ -9,10 +9,12 @@ export interface BookList {
   id: number;
   name: string;
   books: BookSummary[];
+  isPrivate: boolean;
 }
 
 export interface CreateListRequest {
   name: string;
+  isPrivate: boolean;
 }
 
 export interface AddBookToListRequest {

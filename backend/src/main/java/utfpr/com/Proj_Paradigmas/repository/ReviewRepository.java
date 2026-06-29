@@ -14,6 +14,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByBookGoogleBooksId(String googleBooksId);
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"book", "user"})
     List<Review> findByUserUsername(String username);
 
     boolean existsByUserAndBook(User user, Book book);

@@ -15,6 +15,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -53,8 +55,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-        } catch (JwtException ignored) {
-            // token inválido/expirado: segue sem autenticar, a autorização barra em seguida
+        } catch (JwtException | UsernameNotFoundException ignored) {
+            // token inválido/expirado ou usuário inexistente: segue sem autenticar, a autorização barra em seguida
         }
 
         filterChain.doFilter(request, response);

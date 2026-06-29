@@ -6,7 +6,8 @@ public record ReviewResponse(
         Long id,
         String username,
         String googleBooksId,
-        Integer rating,
+        String bookTitle,
+        Double rating,
         String comment,
         Instant createdAt
 ) {}

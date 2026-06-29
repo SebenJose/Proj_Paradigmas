@@ -24,3 +24,10 @@ export function removeBook(listId: number, bookId: number): Promise<BookList> {
     method: "DELETE",
   });
 }
+
+export function updatePrivacy(listId: number, isPrivate: boolean): Promise<BookList> {
+  return apiFetch<BookList>(`/api/lists/${listId}/privacy`, {
+    method: "PATCH",
+    body: JSON.stringify({ isPrivate }),
+  });
+}

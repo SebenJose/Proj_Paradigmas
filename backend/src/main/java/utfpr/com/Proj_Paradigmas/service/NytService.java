@@ -1,0 +1,100 @@
+package utfpr.com.Proj_Paradigmas.service;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.core.task.TaskExecutor;
+import utfpr.com.Proj_Paradigmas.dto.BookRatingSummary;
+import utfpr.com.Proj_Paradigmas.dto.GoogleBookVolumeDto;
+import utfpr.com.Proj_Paradigmas.dto.NytBestsellersResponseDto.NytBookDto;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class NytService {
+    private final NytClient nytClient;
+    private final GoogleBooksClient googleBooksClient;
+    private final TaskExecutor taskExecutor;
+    
+    private volatile List<BookRatingSummary> cache = List.of();
+    private volatile LocalDateTime nextAllowedUpdateTime = LocalDateTime.MIN;
+    private final AtomicBoolean isUpdating = new AtomicBoolean(false);
+    
+    public List<BookRatingSummary> getAcclaimedBooks() {
+        if (LocalDateTime.now().isAfter(nextAllowedUpdateTime)) {
+            triggerAsyncUpdate();
+        }
+        return cache;
+    }
+    
+    private void triggerAsyncUpdate() {
+        if (isUpdating.compareAndSet(false, true)) {
+            try {
+                taskExecutor.execute(this::updateCache);
+            } catch (Exception e) {
+                log.error("Failed to submit cache update task to executor", e);
+                this.nextAllowedUpdateTime = LocalDateTime.now().plusMinutes(15);
+                isUpdating.set(false);
+            }
+        }
+    }
+    
+    private void updateCache() {
+        try {
+            List<NytBookDto> nytBooks = nytClient.getHardcoverFictionBestsellers();
+            if (nytBooks.isEmpty()) {
+                this.nextAllowedUpdateTime = LocalDateTime.now().plusMinutes(15); // Retry in 15 mins
+                return;
+            }
+            
+            List<BookRatingSummary> mappedBooks = new ArrayList<>();
+            for (NytBookDto nytBook : nytBooks) {
+                try {
+                    Optional<GoogleBookVolumeDto> optGoogleBook = resolveToGoogleBook(nytBook);
+                    if (optGoogleBook.isPresent()) {
+                        GoogleBookVolumeDto gBook = optGoogleBook.get();
+                        GoogleBookVolumeDto.VolumeInfo info = gBook.volumeInfo();
+                        if (info != null) {
+                            String thumbnail = info.imageLinks() != null ? info.imageLinks().thumbnail() : null;
+                            mappedBooks.add(new BookRatingSummary(gBook.id(), info.title(), thumbnail, 4.5, 0L));
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Erro ao processar livro do NYT: " + nytBook.title(), e);
+                }
+            }
+            
+            if (!mappedBooks.isEmpty()) {
+                this.cache = List.copyOf(mappedBooks);
+                this.nextAllowedUpdateTime = LocalDateTime.now().plusHours(24);
+            } else {
+                this.nextAllowedUpdateTime = LocalDateTime.now().plusMinutes(15); // Retry in 15 mins
+            }
+        } catch (Exception e) {
+            log.error("Erro ao atualizar cache do NYT", e);
+            this.nextAllowedUpdateTime = LocalDateTime.now().plusMinutes(15); // Retry in 15 mins
+        } finally {
+            isUpdating.set(false);
+        }
+    }
+    
+    private Optional<GoogleBookVolumeDto> resolveToGoogleBook(NytBookDto nytBook) {
+        if (nytBook.isbn13() != null && !nytBook.isbn13().isBlank()) {
+            List<GoogleBookVolumeDto> items = googleBooksClient.search("isbn:" + nytBook.isbn13());
+            if (!items.isEmpty()) {
+                return Optional.of(items.get(0));
+            }
+        }
+        String fallbackQuery = "intitle:\"" + nytBook.title() + "\" inauthor:\"" + nytBook.author() + "\"";
+        List<GoogleBookVolumeDto> items = googleBooksClient.search(fallbackQuery);
+        if (!items.isEmpty()) {
+            return Optional.of(items.get(0));
+        }
+        return Optional.empty();
+    }
+}

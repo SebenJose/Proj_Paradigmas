@@ -44,7 +44,7 @@ public class Review {
     private Book book;
 
     @Column(nullable = false)
-    private Integer rating;
+    private Double rating;
 
     @Column(columnDefinition = "TEXT")
     private String comment;

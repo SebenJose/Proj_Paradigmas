@@ -9,4 +9,17 @@ public record BookDetailResponse(
         String description,
         String coverUrl,
         String publishedDate,
-        Integer pageCount) {}
+        Integer pageCount,
+        Boolean embeddable) {
+
+    public BookDetailResponse(
+            String googleBooksId,
+            String title,
+            List<String> authors,
+            String description,
+            String coverUrl,
+            String publishedDate,
+            Integer pageCount) {
+        this(googleBooksId, title, authors, description, coverUrl, publishedDate, pageCount, null);
+    }
+}
