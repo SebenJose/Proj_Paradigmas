@@ -20,15 +20,16 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboardData() {
-        PageRequest limitFive = PageRequest.of(0, 5);
+        PageRequest limitBooks = PageRequest.of(0, 20);
+        PageRequest limitReviews = PageRequest.of(0, 15);
 
         List<BookRatingSummary> topRated = nytService.getAcclaimedBooks();
         if (topRated == null || topRated.isEmpty()) {
-            topRated = reviewRepository.findTopRatedBooks(limitFive);
+            topRated = reviewRepository.findTopRatedBooks(limitBooks);
         }
-        List<BookRatingSummary> mostReviewed = reviewRepository.findMostReviewedBooks(limitFive);
+        List<BookRatingSummary> mostReviewed = reviewRepository.findMostReviewedBooks(limitBooks);
 
-        List<ReviewResponse> recentReviews = reviewRepository.findRecentReviews(limitFive)
+        List<ReviewResponse> recentReviews = reviewRepository.findRecentReviews(limitReviews)
                 .stream()
                 .map(this::toReviewResponse)
                 .toList();
