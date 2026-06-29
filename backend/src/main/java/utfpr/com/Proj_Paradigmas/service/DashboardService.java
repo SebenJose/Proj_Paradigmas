@@ -16,12 +16,16 @@ import utfpr.com.Proj_Paradigmas.repository.ReviewRepository;
 public class DashboardService {
 
     private final ReviewRepository reviewRepository;
+    private final NytService nytService;
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboardData() {
         PageRequest limitFive = PageRequest.of(0, 5);
 
-        List<BookRatingSummary> topRated = reviewRepository.findTopRatedBooks(limitFive);
+        List<BookRatingSummary> topRated = nytService.getAcclaimedBooks();
+        if (topRated == null || topRated.isEmpty()) {
+            topRated = reviewRepository.findTopRatedBooks(limitFive);
+        }
         List<BookRatingSummary> mostReviewed = reviewRepository.findMostReviewedBooks(limitFive);
 
         List<ReviewResponse> recentReviews = reviewRepository.findRecentReviews(limitFive)
