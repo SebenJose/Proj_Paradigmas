@@ -34,7 +34,12 @@ public class NytService {
     
     private void triggerAsyncUpdate() {
         if (isUpdating.compareAndSet(false, true)) {
-            taskExecutor.execute(this::updateCache);
+            try {
+                taskExecutor.execute(this::updateCache);
+            } catch (Exception e) {
+                log.error("Failed to submit cache update task to executor", e);
+                isUpdating.set(false);
+            }
         }
     }
     
@@ -42,6 +47,7 @@ public class NytService {
         try {
             List<NytBookDto> nytBooks = nytClient.getHardcoverFictionBestsellers();
             if (nytBooks.isEmpty()) {
+                this.lastUpdated = LocalDateTime.now().minusHours(24).plusMinutes(15); // Retry in 15 mins
                 return;
             }
             
@@ -59,9 +65,12 @@ public class NytService {
             if (!mappedBooks.isEmpty()) {
                 this.cache = List.copyOf(mappedBooks);
                 this.lastUpdated = LocalDateTime.now();
+            } else {
+                this.lastUpdated = LocalDateTime.now().minusHours(24).plusMinutes(15); // Retry in 15 mins
             }
         } catch (Exception e) {
             log.error("Erro ao atualizar cache do NYT", e);
+            this.lastUpdated = LocalDateTime.now().minusHours(24).plusMinutes(15); // Retry in 15 mins
         } finally {
             isUpdating.set(false);
         }
