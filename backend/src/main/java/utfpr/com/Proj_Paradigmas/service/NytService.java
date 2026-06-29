@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @RequiredArgsConstructor
@@ -20,8 +21,8 @@ public class NytService {
     private final GoogleBooksClient googleBooksClient;
     
     private List<BookRatingSummary> cache = Collections.synchronizedList(new ArrayList<>());
-    private LocalDateTime lastUpdated = LocalDateTime.MIN;
-    private boolean isUpdating = false;
+    private volatile LocalDateTime lastUpdated = LocalDateTime.MIN;
+    private final AtomicBoolean isUpdating = new AtomicBoolean(false);
     
     public List<BookRatingSummary> getAcclaimedBooks() {
         if (cache.isEmpty() || lastUpdated.isBefore(LocalDateTime.now().minusHours(24))) {
@@ -30,17 +31,16 @@ public class NytService {
         return cache;
     }
     
-    private synchronized void triggerAsyncUpdate() {
-        if (isUpdating) return;
-        isUpdating = true;
-        new Thread(this::updateCache).start();
+    private void triggerAsyncUpdate() {
+        if (isUpdating.compareAndSet(false, true)) {
+            new Thread(this::updateCache).start();
+        }
     }
     
     private void updateCache() {
         try {
             List<NytBookDto> nytBooks = nytClient.getHardcoverFictionBestsellers();
             if (nytBooks.isEmpty()) {
-                isUpdating = false;
                 return;
             }
             
@@ -63,7 +63,7 @@ public class NytService {
         } catch (Exception e) {
             log.error("Erro ao atualizar cache do NYT", e);
         } finally {
-            isUpdating = false;
+            isUpdating.set(false);
         }
     }
     
