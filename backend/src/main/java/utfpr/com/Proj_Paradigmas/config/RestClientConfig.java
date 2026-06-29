@@ -11,4 +11,10 @@ public class RestClientConfig {
     public RestClient googleBooksRestClient() {
         return RestClient.builder().baseUrl("https://www.googleapis.com/books/v1").build();
     }
+
+    @Bean
+    public RestClient nytRestClient() {
+        return RestClient.builder().baseUrl("https://api.nytimes.com/svc/books/v3").build();
+    }
 }
+
