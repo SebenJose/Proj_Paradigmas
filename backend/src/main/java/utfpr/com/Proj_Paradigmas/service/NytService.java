@@ -22,11 +22,11 @@ public class NytService {
     private final TaskExecutor taskExecutor;
     
     private volatile List<BookRatingSummary> cache = List.of();
-    private volatile LocalDateTime lastUpdated = LocalDateTime.MIN;
+    private volatile LocalDateTime nextAllowedUpdateTime = LocalDateTime.MIN;
     private final AtomicBoolean isUpdating = new AtomicBoolean(false);
     
     public List<BookRatingSummary> getAcclaimedBooks() {
-        if (cache.isEmpty() || lastUpdated.isBefore(LocalDateTime.now().minusHours(24))) {
+        if (LocalDateTime.now().isAfter(nextAllowedUpdateTime)) {
             triggerAsyncUpdate();
         }
         return cache;
@@ -38,6 +38,7 @@ public class NytService {
                 taskExecutor.execute(this::updateCache);
             } catch (Exception e) {
                 log.error("Failed to submit cache update task to executor", e);
+                this.nextAllowedUpdateTime = LocalDateTime.now().plusMinutes(15);
                 isUpdating.set(false);
             }
         }
@@ -47,30 +48,36 @@ public class NytService {
         try {
             List<NytBookDto> nytBooks = nytClient.getHardcoverFictionBestsellers();
             if (nytBooks.isEmpty()) {
-                this.lastUpdated = LocalDateTime.now().minusHours(24).plusMinutes(15); // Retry in 15 mins
+                this.nextAllowedUpdateTime = LocalDateTime.now().plusMinutes(15); // Retry in 15 mins
                 return;
             }
             
             List<BookRatingSummary> mappedBooks = new ArrayList<>();
             for (NytBookDto nytBook : nytBooks) {
-                Optional<GoogleBookVolumeDto> optGoogleBook = resolveToGoogleBook(nytBook);
-                if (optGoogleBook.isPresent()) {
-                    GoogleBookVolumeDto gBook = optGoogleBook.get();
-                    GoogleBookVolumeDto.VolumeInfo info = gBook.volumeInfo();
-                    String thumbnail = info.imageLinks() != null ? info.imageLinks().thumbnail() : null;
-                    mappedBooks.add(new BookRatingSummary(gBook.id(), info.title(), thumbnail, 4.5, 0L));
+                try {
+                    Optional<GoogleBookVolumeDto> optGoogleBook = resolveToGoogleBook(nytBook);
+                    if (optGoogleBook.isPresent()) {
+                        GoogleBookVolumeDto gBook = optGoogleBook.get();
+                        GoogleBookVolumeDto.VolumeInfo info = gBook.volumeInfo();
+                        if (info != null) {
+                            String thumbnail = info.imageLinks() != null ? info.imageLinks().thumbnail() : null;
+                            mappedBooks.add(new BookRatingSummary(gBook.id(), info.title(), thumbnail, 4.5, 0L));
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Erro ao processar livro do NYT: " + nytBook.title(), e);
                 }
             }
             
             if (!mappedBooks.isEmpty()) {
                 this.cache = List.copyOf(mappedBooks);
-                this.lastUpdated = LocalDateTime.now();
+                this.nextAllowedUpdateTime = LocalDateTime.now().plusHours(24);
             } else {
-                this.lastUpdated = LocalDateTime.now().minusHours(24).plusMinutes(15); // Retry in 15 mins
+                this.nextAllowedUpdateTime = LocalDateTime.now().plusMinutes(15); // Retry in 15 mins
             }
         } catch (Exception e) {
             log.error("Erro ao atualizar cache do NYT", e);
-            this.lastUpdated = LocalDateTime.now().minusHours(24).plusMinutes(15); // Retry in 15 mins
+            this.nextAllowedUpdateTime = LocalDateTime.now().plusMinutes(15); // Retry in 15 mins
         } finally {
             isUpdating.set(false);
         }
