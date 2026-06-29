@@ -27,11 +27,17 @@ public class BookService {
 
     @Transactional
     public BookDetailResponse getDetail(String googleBooksId) {
+        if (googleBooksId == null || googleBooksId.isBlank()) {
+            throw new IllegalArgumentException("Google Books ID cannot be null or blank");
+        }
         return toDetailResponse(findOrCreate(googleBooksId));
     }
 
     @Transactional
     public Book findOrCreate(String googleBooksId) {
+        if (googleBooksId == null || googleBooksId.isBlank()) {
+            throw new IllegalArgumentException("Google Books ID cannot be null or blank");
+        }
         return bookRepository
                 .findByGoogleBooksId(googleBooksId)
                 .orElseGet(
@@ -77,7 +83,7 @@ public class BookService {
         if (info == null) {
             throw new ResourceNotFoundException("Detalhes do volume estão ausentes no Google Books");
         }
-        String title = info.title() != null ? info.title() : "Título Desconhecido";
+        String title = (info.title() != null && !info.title().isBlank()) ? info.title() : "Título Desconhecido";
         return Book.builder()
                 .googleBooksId(dto.id())
                 .title(title)

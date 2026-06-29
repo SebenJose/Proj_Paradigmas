@@ -98,4 +98,46 @@ public class BookServiceTest {
             bookService.findOrCreate(googleId);
         });
     }
+
+    @Test
+    public void testFindOrCreateThrowsIllegalArgumentExceptionWhenIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> bookService.findOrCreate(null));
+    }
+
+    @Test
+    public void testFindOrCreateThrowsIllegalArgumentExceptionWhenIdIsBlank() {
+        assertThrows(IllegalArgumentException.class, () -> bookService.findOrCreate("   "));
+    }
+
+    @Test
+    public void testGetDetailThrowsIllegalArgumentExceptionWhenIdIsNull() {
+        assertThrows(IllegalArgumentException.class, () -> bookService.getDetail(null));
+    }
+
+    @Test
+    public void testGetDetailThrowsIllegalArgumentExceptionWhenIdIsBlank() {
+        assertThrows(IllegalArgumentException.class, () -> bookService.getDetail(""));
+    }
+
+    @Test
+    public void testFindOrCreateUsesDefaultTitleWhenTitleIsBlank() {
+        String googleId = "blank_title_id";
+
+        GoogleBookVolumeDto.VolumeInfo volumeInfo = new GoogleBookVolumeDto.VolumeInfo(
+                "   ",
+                List.of("Some Author"),
+                "Description",
+                "2026-01-01",
+                200,
+                null
+        );
+        GoogleBookVolumeDto mockDto = new GoogleBookVolumeDto(googleId, volumeInfo, new GoogleBookVolumeDto.AccessInfo(false));
+
+        when(googleBooksClient.findById(googleId)).thenReturn(Optional.of(mockDto));
+
+        Book result = bookService.findOrCreate(googleId);
+
+        assertNotNull(result);
+        assertEquals("Título Desconhecido", result.getTitle());
+    }
 }
