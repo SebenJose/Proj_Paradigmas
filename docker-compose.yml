@@ -30,6 +30,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-troque-em-producao-0123456789abcdef0123456789abcdef}
       SPRING_DOCKER_COMPOSE_ENABLED: "false"
       GOOGLE_BOOKS_API_KEY: ${GOOGLE_BOOKS_API_KEY:-}
+      NYT_API_KEY: ${NYT_API_KEY:-}
     ports:
       - "8080:8080"
     depends_on:
