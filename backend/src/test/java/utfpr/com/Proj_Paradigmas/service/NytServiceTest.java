@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.task.TaskExecutor;
 import utfpr.com.Proj_Paradigmas.dto.BookRatingSummary;
 import utfpr.com.Proj_Paradigmas.dto.GoogleBookVolumeDto;
 import utfpr.com.Proj_Paradigmas.dto.NytBestsellersResponseDto.NytBookDto;
@@ -23,6 +24,9 @@ public class NytServiceTest {
 
     @Mock
     private GoogleBooksClient googleBooksClient;
+
+    @Mock
+    private TaskExecutor taskExecutor;
 
     @InjectMocks
     private NytService nytService;
@@ -44,6 +48,13 @@ public class NytServiceTest {
         );
         GoogleBookVolumeDto.AccessInfo accessInfo = new GoogleBookVolumeDto.AccessInfo(true);
         sampleGoogleBook = new GoogleBookVolumeDto("google-id-123", volumeInfo, accessInfo);
+
+        // Run taskExecutor runnable synchronously in unit tests
+        lenient().doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(0);
+            runnable.run();
+            return null;
+        }).when(taskExecutor).execute(any(Runnable.class));
     }
 
     @Test
@@ -52,23 +63,13 @@ public class NytServiceTest {
         when(nytClient.getHardcoverFictionBestsellers()).thenReturn(List.of(sampleNytBook));
         when(googleBooksClient.search("isbn:9781234567890")).thenReturn(List.of(sampleGoogleBook));
 
-        // Act - First call should trigger async update
-        List<BookRatingSummary> initialResult = nytService.getAcclaimedBooks();
+        // Act
+        List<BookRatingSummary> result = nytService.getAcclaimedBooks();
         
-        // Assert - Initial result should be empty since update is async
-        assertNotNull(initialResult);
-        assertTrue(initialResult.isEmpty() || initialResult.size() == 1);
-
-        // Wait for async update thread to complete
-        waitForCacheToPopulate(1);
-
-        // Act - Second call should return cached data
-        List<BookRatingSummary> cachedResult = nytService.getAcclaimedBooks();
-
-        // Assert cached values
-        assertNotNull(cachedResult);
-        assertEquals(1, cachedResult.size());
-        BookRatingSummary summary = cachedResult.get(0);
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        BookRatingSummary summary = result.get(0);
         assertEquals("google-id-123", summary.googleBooksId());
         assertEquals("Sample Title", summary.title());
         assertEquals("http://example.com/thumbnail.jpg", summary.coverUrl());
@@ -78,6 +79,14 @@ public class NytServiceTest {
         // Verify that external clients were called only once
         verify(nytClient, times(1)).getHardcoverFictionBestsellers();
         verify(googleBooksClient, times(1)).search("isbn:9781234567890");
+
+        // Act - Second call should return cached data
+        List<BookRatingSummary> cachedResult = nytService.getAcclaimedBooks();
+
+        // Assert cached values
+        assertNotNull(cachedResult);
+        assertEquals(1, cachedResult.size());
+        assertEquals(result, cachedResult);
     }
 
     @Test
@@ -90,14 +99,11 @@ public class NytServiceTest {
         when(googleBooksClient.search(fallbackQuery)).thenReturn(List.of(sampleGoogleBook));
 
         // Act
-        nytService.getAcclaimedBooks();
-        waitForCacheToPopulate(1);
-
-        List<BookRatingSummary> cachedResult = nytService.getAcclaimedBooks();
+        List<BookRatingSummary> result = nytService.getAcclaimedBooks();
 
         // Assert
-        assertEquals(1, cachedResult.size());
-        assertEquals("google-id-123", cachedResult.get(0).googleBooksId());
+        assertEquals(1, result.size());
+        assertEquals("google-id-123", result.get(0).googleBooksId());
 
         verify(googleBooksClient, times(1)).search("isbn:9781234567890");
         verify(googleBooksClient, times(1)).search(fallbackQuery);
@@ -113,13 +119,10 @@ public class NytServiceTest {
         when(googleBooksClient.search(fallbackQuery)).thenReturn(List.of(sampleGoogleBook));
 
         // Act
-        nytService.getAcclaimedBooks();
-        waitForCacheToPopulate(1);
-
-        List<BookRatingSummary> cachedResult = nytService.getAcclaimedBooks();
+        List<BookRatingSummary> result = nytService.getAcclaimedBooks();
 
         // Assert
-        assertEquals(1, cachedResult.size());
+        assertEquals(1, result.size());
         verify(googleBooksClient, never()).search(startsWith("isbn:"));
         verify(googleBooksClient, times(1)).search(fallbackQuery);
     }
@@ -134,13 +137,10 @@ public class NytServiceTest {
         when(googleBooksClient.search(fallbackQuery)).thenReturn(List.of(sampleGoogleBook));
 
         // Act
-        nytService.getAcclaimedBooks();
-        waitForCacheToPopulate(1);
-
-        List<BookRatingSummary> cachedResult = nytService.getAcclaimedBooks();
+        List<BookRatingSummary> result = nytService.getAcclaimedBooks();
 
         // Assert
-        assertEquals(1, cachedResult.size());
+        assertEquals(1, result.size());
         verify(googleBooksClient, never()).search(startsWith("isbn:"));
         verify(googleBooksClient, times(1)).search(fallbackQuery);
     }
@@ -155,14 +155,10 @@ public class NytServiceTest {
         when(googleBooksClient.search(fallbackQuery)).thenReturn(List.of());
 
         // Act
-        nytService.getAcclaimedBooks();
-        
-        Thread.sleep(100);
-
-        List<BookRatingSummary> cachedResult = nytService.getAcclaimedBooks();
+        List<BookRatingSummary> result = nytService.getAcclaimedBooks();
 
         // Assert
-        assertTrue(cachedResult.isEmpty());
+        assertTrue(result.isEmpty());
     }
 
     @Test
@@ -171,13 +167,10 @@ public class NytServiceTest {
         when(nytClient.getHardcoverFictionBestsellers()).thenReturn(List.of());
 
         // Act
-        nytService.getAcclaimedBooks();
-        Thread.sleep(100);
-
-        List<BookRatingSummary> cachedResult = nytService.getAcclaimedBooks();
+        List<BookRatingSummary> result = nytService.getAcclaimedBooks();
 
         // Assert
-        assertTrue(cachedResult.isEmpty());
+        assertTrue(result.isEmpty());
         verify(googleBooksClient, never()).search(anyString());
     }
 
@@ -187,20 +180,9 @@ public class NytServiceTest {
         when(nytClient.getHardcoverFictionBestsellers()).thenThrow(new RuntimeException("API error"));
 
         // Act
-        nytService.getAcclaimedBooks();
-        Thread.sleep(100);
-
-        List<BookRatingSummary> cachedResult = nytService.getAcclaimedBooks();
+        List<BookRatingSummary> result = nytService.getAcclaimedBooks();
 
         // Assert
-        assertTrue(cachedResult.isEmpty());
-    }
-
-    private void waitForCacheToPopulate(int expectedSize) throws InterruptedException {
-        int retries = 50;
-        while (retries > 0 && nytService.getAcclaimedBooks().size() < expectedSize) {
-            Thread.sleep(10);
-            retries--;
-        }
+        assertTrue(result.isEmpty());
     }
 }

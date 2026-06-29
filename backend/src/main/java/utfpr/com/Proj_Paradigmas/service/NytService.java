@@ -3,12 +3,12 @@ package utfpr.com.Proj_Paradigmas.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.core.task.TaskExecutor;
 import utfpr.com.Proj_Paradigmas.dto.BookRatingSummary;
 import utfpr.com.Proj_Paradigmas.dto.GoogleBookVolumeDto;
 import utfpr.com.Proj_Paradigmas.dto.NytBestsellersResponseDto.NytBookDto;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,8 +19,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class NytService {
     private final NytClient nytClient;
     private final GoogleBooksClient googleBooksClient;
+    private final TaskExecutor taskExecutor;
     
-    private List<BookRatingSummary> cache = Collections.synchronizedList(new ArrayList<>());
+    private volatile List<BookRatingSummary> cache = List.of();
     private volatile LocalDateTime lastUpdated = LocalDateTime.MIN;
     private final AtomicBoolean isUpdating = new AtomicBoolean(false);
     
@@ -33,7 +34,7 @@ public class NytService {
     
     private void triggerAsyncUpdate() {
         if (isUpdating.compareAndSet(false, true)) {
-            new Thread(this::updateCache).start();
+            taskExecutor.execute(this::updateCache);
         }
     }
     
@@ -56,9 +57,8 @@ public class NytService {
             }
             
             if (!mappedBooks.isEmpty()) {
-                cache.clear();
-                cache.addAll(mappedBooks);
-                lastUpdated = LocalDateTime.now();
+                this.cache = List.copyOf(mappedBooks);
+                this.lastUpdated = LocalDateTime.now();
             }
         } catch (Exception e) {
             log.error("Erro ao atualizar cache do NYT", e);
