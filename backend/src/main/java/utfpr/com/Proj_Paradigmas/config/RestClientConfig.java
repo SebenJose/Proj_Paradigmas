@@ -14,7 +14,15 @@ public class RestClientConfig {
 
     @Bean
     public RestClient nytRestClient() {
-        return RestClient.builder().baseUrl("https://api.nytimes.com/svc/books/v3").build();
+        org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory = 
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(3000);
+        requestFactory.setReadTimeout(5000);
+        return RestClient.builder()
+                .requestFactory(requestFactory)
+                .baseUrl("https://api.nytimes.com/svc/books/v3")
+                .build();
     }
 }
+
 

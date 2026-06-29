@@ -81,6 +81,7 @@ public class NytClientTest {
 
         List<NytBestsellersResponseDto.NytBookDto> result = nytClient.getHardcoverFictionBestsellers();
 
+        mockServer.verify();
         assertTrue(result.isEmpty());
     }
 }
